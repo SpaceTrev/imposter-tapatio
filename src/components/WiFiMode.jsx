@@ -259,17 +259,17 @@ function HostView({ onBack }) {
   const revealImposters = () => {
     setGameRevealed(true);
     
-    // Include host in the revealed roles
-    const allRoles = [hostRole, ...roles];
+    // Include host in the revealed roles, but hide imposter words if they don't have hints
+    const allRoles = [hostRole, ...roles].map(r => ({
+      name: r.name,
+      isImposter: r.isImposter,
+      word: (!r.isImposter || r.word) ? r.word : null // Only show word if not imposter OR if they already have it
+    }));
     
     connections.forEach((connData) => {
       connData.conn.send({ 
         type: "reveal-imposters",
-        allRoles: allRoles.map(r => ({
-          name: r.name,
-          isImposter: r.isImposter,
-          word: r.word
-        }))
+        allRoles
       });
     });
   };
