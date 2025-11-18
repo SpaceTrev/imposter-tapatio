@@ -4,6 +4,10 @@ import {
   CATEGORIES,
   randomPairFromCategory,
 } from "../data/categories";
+import {
+  CATEGORIES_EN,
+  randomPairFromCategory_EN,
+} from "../data/categories-en";
 
 const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -93,6 +97,9 @@ function HostView({ onBack }) {
   const [numImposters, setNumImposters] = useState(1);
   const [useImposterWord, setUseImposterWord] = useState(false);
   const [excludeAdult, setExcludeAdult] = useState(false);
+  const [sendHintToImposter, setSendHintToImposter] = useState(false);
+  const [hint, setHint] = useState("");
+  const [language, setLanguage] = useState("es"); // es | en
   const [roles, setRoles] = useState([]); // { playerId, name, isImposter, word }
   const [hostRole, setHostRole] = useState(null); // Host's own role
   const [gameRevealed, setGameRevealed] = useState(false);
@@ -183,30 +190,33 @@ function HostView({ onBack }) {
 
   const startGame = () => {
     if (players.length < 2) {
-      alert("Se necesitan al menos 2 jugadores más (además del anfitrión)");
+      alert(language === "es" ? "Se necesitan al menos 2 jugadores más (además del anfitrión)" : "Need at least 2 more players (besides the host)");
       return;
     }
 
-    // Select category
-    const allowedCategories = CATEGORIES.filter(c => {
+    // Select category based on language
+    const categoriesPool = language === "es" ? CATEGORIES : CATEGORIES_EN;
+    const randomPairFn = language === "es" ? randomPairFromCategory : randomPairFromCategory_EN;
+    
+    const allowedCategories = categoriesPool.filter(c => {
       if (excludeAdult && c.type === "adult") return false;
       return true;
     });
     
     let category;
     if (categoryId) {
-      category = CATEGORIES.find(c => c.id === categoryId);
+      category = categoriesPool.find(c => c.id === categoryId);
     } else {
       category = allowedCategories[Math.floor(Math.random() * allowedCategories.length)];
     }
     
     if (!category) {
-      alert("Categoría inválida");
+      alert(language === "es" ? "Categoría inválida" : "Invalid category");
       return;
     }
 
     // Get word pair
-    const { common, imposter } = randomPairFromCategory(category);
+    const { common, imposter } = randomPairFn(category);
     
     // Include host in player pool
     const allPlayers = [{ id: 'host', name: hostName }, ...players];
@@ -394,10 +404,20 @@ function HostView({ onBack }) {
           <>
             <div style={{ marginTop: 24 }}>
               <label>
-                Categoría
+                {language === "es" ? "Idioma" : "Language"}
+                <select value={language} onChange={(e) => { setLanguage(e.target.value); setCategoryId(""); }}>
+                  <option value="es">🇲🇽 Español</option>
+                  <option value="en">🇺🇸 English</option>
+                </select>
+              </label>
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <label>
+                {language === "es" ? "Categoría" : "Category"}
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                  <option value="">🎲 Aleatoria</option>
-                  {CATEGORIES.filter(c => {
+                  <option value="">{language === "es" ? "🎲 Aleatoria" : "🎲 Random"}</option>
+                  {(language === "es" ? CATEGORIES : CATEGORIES_EN).filter(c => {
                     if (excludeAdult && c.type === "adult") return false;
                     return true;
                   }).map((cat) => (
@@ -411,7 +431,7 @@ function HostView({ onBack }) {
 
             <div style={{ marginTop: 16 }}>
               <label>
-                Número de impostores
+                {language === "es" ? "Número de impostores" : "Number of imposters"}
                 <input
                   type="number"
                   min="1"
@@ -426,10 +446,35 @@ function HostView({ onBack }) {
               <label className="checkbox-label">
                 <input
                   type="checkbox"
+                  checked={sendHintToImposter}
+                  onChange={(e) => setSendHintToImposter(e.target.checked)}
+                />
+                {language === "es" ? "Enviar pista extra al impostor" : "Send extra hint to imposter"}
+              </label>
+            </div>
+
+            {sendHintToImposter && (
+              <div style={{ marginTop: 8 }}>
+                <label>
+                  {language === "es" ? "Pista personalizada" : "Custom hint"}
+                  <input
+                    type="text"
+                    value={hint}
+                    onChange={(e) => setHint(e.target.value)}
+                    placeholder={language === "es" ? "Ej: Es algo que comes" : "E.g.: It's something you eat"}
+                  />
+                </label>
+              </div>
+            )}
+
+            <div style={{ marginTop: 8 }}>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
                   checked={useImposterWord}
                   onChange={(e) => setUseImposterWord(e.target.checked)}
                 />
-                Dar pista al impostor (palabra diferente)
+                {language === "es" ? "Dar pista al impostor (palabra diferente)" : "Give hint to imposter (different word)"}
               </label>
             </div>
 
@@ -440,7 +485,7 @@ function HostView({ onBack }) {
                   checked={excludeAdult}
                   onChange={(e) => setExcludeAdult(e.target.checked)}
                 />
-                Excluir contenido adulto
+                {language === "es" ? "Excluir contenido adulto" : "Exclude adult content"}
               </label>
             </div>
 
@@ -450,7 +495,7 @@ function HostView({ onBack }) {
               onClick={startGame}
               disabled={players.length < 2}
             >
-              Iniciar Juego ({players.length + 1} jugadores)
+              {language === "es" ? `Iniciar Juego (${players.length + 1} jugadores)` : `Start Game (${players.length + 1} players)`}
             </button>
           </>
         ) : (

@@ -6,6 +6,8 @@ import {
   randomPairFromCategory,
   getAllowedPairs,
 } from "../data/categories";
+// TODO: Add English support like WiFiMode
+// import { CATEGORIES_EN, getCategoryById_EN, getRandomCategory_EN, randomPairFromCategory_EN } from "../data/categories-en";
 import { buildRoleMessage, openWhatsApp, formatPhoneDisplay } from "../utils/whatsapp";
 
 const randomId = () => Math.random().toString(36).slice(2);
