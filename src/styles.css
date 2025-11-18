@@ -393,10 +393,17 @@ code {
   font-size: 0.75rem;
 }
 
-.theme-toggle {
+.app-controls {
   position: fixed;
   top: 12px;
   right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.theme-toggle,
+.language-toggle {
   background: var(--card);
   border: 1px solid rgba(132, 96, 117, 0.3);
   border-radius: 999px;
@@ -409,19 +416,21 @@ code {
   font-size: 1.2rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
-  z-index: 1000;
 }
 
-[data-theme="dark"] .theme-toggle {
+[data-theme="dark"] .theme-toggle,
+[data-theme="dark"] .language-toggle {
   border: 1px solid rgba(55, 65, 81, 0.9);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.language-toggle:hover {
   transform: scale(1.05);
 }
 
-.theme-toggle:active {
+.theme-toggle:active,
+.language-toggle:active {
   transform: scale(0.95);
 }
 

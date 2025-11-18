@@ -1,58 +1,101 @@
 import React from "react";
 
-export default function HomePage({ onSelectMode }) {
+const text = {
+  es: {
+    title: "Imposter Radar",
+    badge: "Tapatío",
+    subtitle: "Elige tu modo de juego favorito",
+    whatsapp: {
+      title: "Modo WhatsApp",
+      description: "Manda roles por WhatsApp a cada jugador. Ideal para grupos que no están juntos.",
+      button: "Jugar con WhatsApp"
+    },
+    screen: {
+      title: "Modo Revelar en Pantalla",
+      description: "Pasa el celular entre jugadores para que vean su rol. Perfecto para grupos juntos sin WiFi.",
+      button: "Pasar el Celular"
+    },
+    wifi: {
+      title: "Modo WiFi Local",
+      description: "Todos se conectan al mismo juego en su celular. Cada quien ve su rol y palabra en tiempo real.",
+      button: "Jugar en WiFi"
+    },
+    footer: "Hecho con 💚 en Guadalajara"
+  },
+  en: {
+    title: "Imposter Radar",
+    badge: "Game",
+    subtitle: "Choose your favorite game mode",
+    whatsapp: {
+      title: "WhatsApp Mode",
+      description: "Send roles via WhatsApp to each player. Ideal for groups not together.",
+      button: "Play with WhatsApp"
+    },
+    screen: {
+      title: "Pass the Phone Mode",
+      description: "Pass the phone between players to see their role. Perfect for groups together without WiFi.",
+      button: "Pass the Phone"
+    },
+    wifi: {
+      title: "Local WiFi Mode",
+      description: "Everyone connects to the same game on their phone. Each person sees their role and word in real-time.",
+      button: "Play on WiFi"
+    },
+    footer: "Made with 💚 in Guadalajara"
+  }
+};
+
+export default function HomePage({ onSelectMode, language = "es" }) {
+  const t = text[language];
   return (
     <div className="home-page">
       <div className="home-hero">
         <h1 className="home-title">
-          Imposter Radar <span className="badge">Tapatío</span>
+          {t.title} <span className="badge">{t.badge}</span>
         </h1>
         <p className="home-subtitle">
-          Elige tu modo de juego favorito
+          {t.subtitle}
         </p>
       </div>
 
       <div className="mode-selection">
         <div className="mode-card" onClick={() => onSelectMode("whatsapp")}>
           <div className="mode-icon">📱</div>
-          <h2>Modo WhatsApp</h2>
+          <h2>{t.whatsapp.title}</h2>
           <p>
-            Manda roles por WhatsApp a cada jugador.
-            Ideal para grupos que no están juntos.
+            {t.whatsapp.description}
           </p>
           <button className="btn primary full">
-            Jugar con WhatsApp
+            {t.whatsapp.button}
           </button>
         </div>
 
         <div className="mode-card" onClick={() => onSelectMode("screen")}>
           <div className="mode-icon">📲</div>
-          <h2>Modo Revelar en Pantalla</h2>
+          <h2>{t.screen.title}</h2>
           <p>
-            Pasa el celular entre jugadores para que vean su rol.
-            Perfecto para grupos juntos sin WiFi.
+            {t.screen.description}
           </p>
           <button className="btn primary full">
-            Pasar el Celular
+            {t.screen.button}
           </button>
         </div>
 
         <div className="mode-card" onClick={() => onSelectMode("wifi")}>
           <div className="mode-icon">📡</div>
-          <h2>Modo WiFi Local</h2>
+          <h2>{t.wifi.title}</h2>
           <p>
-            Todos se conectan al mismo juego en su celular.
-            Cada quien ve su rol y palabra en tiempo real.
+            {t.wifi.description}
           </p>
           <button className="btn primary full">
-            Jugar en WiFi
+            {t.wifi.button}
           </button>
         </div>
       </div>
 
       <div className="home-footer">
         <p className="muted">
-          Hecho con 💚 en Guadalajara
+          {t.footer}
         </p>
       </div>
     </div>

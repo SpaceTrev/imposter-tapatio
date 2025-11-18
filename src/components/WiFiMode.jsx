@@ -11,6 +11,104 @@ import {
 
 const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
+const selectText = {
+  es: {
+    back: "← Volver",
+    title: "Modo WiFi Local",
+    subtitle: "Elige tu rol",
+    host: {
+      title: "Ser Anfitrión",
+      description: "Crea la sala, configura el juego y controla las revelaciones"
+    },
+    player: {
+      title: "Unirse como Jugador",
+      description: "Entra con un código y juega en tu celular",
+      placeholder: "Código de sala (ej: ABC123)",
+      button: "Unirse"
+    }
+  },
+  en: {
+    back: "← Back",
+    title: "Local WiFi Mode",
+    subtitle: "Choose your role",
+    host: {
+      title: "Be Host",
+      description: "Create the room, configure the game and control revelations"
+    },
+    player: {
+      title: "Join as Player",
+      description: "Enter a code and play on your phone",
+      placeholder: "Room code (e.g. ABC123)",
+      button: "Join"
+    }
+  }
+};
+
+const playerText = {
+  es: {
+    back: "← Volver",
+    joinRoom: "Unirse a Sala",
+    enterName: "Ingresa tu nombre",
+    namePlaceholder: "Tu nombre",
+    connect: "Conectar",
+    connecting: "Conectando...",
+    room: "Sala",
+    connectingToHost: "Conectando al anfitrión...",
+    connectedAs: "Conectado como",
+    waitingForGame: "Esperando que inicie el juego...",
+    hostWillConfigure: "El anfitrión configurará el juego y asignará los roles",
+    yourRole: "Tu Rol",
+    youAreImposter: "🔥 Eres el puto impostor cabrón/a",
+    youAreNotImposter: "✅ No eres el puto impostor cabrón/a",
+    yourWord: "Tu Palabra",
+    secretWord: "Palabra Secreta",
+    noClueImposter: "No tienes pista. Esperando que el anfitrión revele tu palabra...",
+    waitingWord: "Esperando palabra...",
+    impostersRevealed: "¡Impostores Revelados!",
+    gameOver: "El juego ha terminado",
+    results: "Resultados",
+    imposter: "🔥 Impostor",
+    crew: "✅ Tripulación",
+    word: "Palabra",
+    noClue: "(sin pista)",
+    disconnectedAlert: "Desconectado del anfitrión",
+    connectionError: "Error al conectar",
+    peerError: "Error de conexión",
+    codeCorrect: "¿El código de sala es correcto?"
+  },
+  en: {
+    back: "← Back",
+    joinRoom: "Join Room",
+    enterName: "Enter your name",
+    namePlaceholder: "Your name",
+    connect: "Connect",
+    connecting: "Connecting...",
+    room: "Room",
+    connectingToHost: "Connecting to host...",
+    connectedAs: "Connected as",
+    waitingForGame: "Waiting for game to start...",
+    hostWillConfigure: "Host will configure the game and assign roles",
+    yourRole: "Your Role",
+    youAreImposter: "🔥 You're the fucking imposter",
+    youAreNotImposter: "✅ You're NOT the fucking imposter",
+    yourWord: "Your Word",
+    secretWord: "Secret Word",
+    noClueImposter: "No clue. Waiting for host to reveal your word...",
+    waitingWord: "Waiting for word...",
+    impostersRevealed: "Imposters Revealed!",
+    gameOver: "Game is over",
+    results: "Results",
+    imposter: "🔥 Imposter",
+    crew: "✅ Crew",
+    word: "Word",
+    noClue: "(no clue)",
+    disconnectedAlert: "Disconnected from host",
+    connectionError: "Connection error",
+    peerError: "Connection error",
+    codeCorrect: "Is the room code correct?"
+  }
+};
+
 function shuffle(arr) {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -20,41 +118,42 @@ function shuffle(arr) {
   return copy;
 }
 
-export default function WiFiMode({ onBack }) {
+export default function WiFiMode({ onBack, language = "es" }) {
   const [role, setRole] = useState("select"); // select | host | player
   const [roomCode, setRoomCode] = useState("");
+  const t = selectText[language];
 
   if (role === "select") {
     return (
       <div className="wifi-mode">
         <div className="app-header">
           <button className="btn ghost small" onClick={onBack}>
-            ← Volver
+            {t.back}
           </button>
-          <h1>Modo WiFi Local</h1>
+          <h1>{t.title}</h1>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
-          <h2 className="section-title">Elige tu rol</h2>
+          <h2 className="section-title">{t.subtitle}</h2>
           
           <div className="wifi-role-selection">
             <div className="wifi-option-card" onClick={() => setRole("host")}>
               <div className="wifi-icon">👑</div>
-              <h3>Ser Anfitrión</h3>
+              <h3>{t.host.title}</h3>
               <p className="muted">
-                Crea la sala, configura el juego y controla las revelaciones
+                {t.host.description}
               </p>
             </div>
 
             <div className="wifi-option-card">
               <div className="wifi-icon">🎮</div>
-              <h3>Unirse como Jugador</h3>
+              <h3>{t.player.title}</h3>
               <p className="muted">
-                Entra con un código y juega en tu celular
+                {t.player.description}
               </p>
               <input
                 type="text"
-                placeholder="Código de sala (ej: ABC123)"
+                placeholder={t.player.placeholder}
                 value={roomCode}
                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                 onClick={(e) => e.stopPropagation()}
@@ -68,7 +167,7 @@ export default function WiFiMode({ onBack }) {
                 }}
                 style={{ marginTop: 8 }}
               >
-                Unirse
+                {t.player.button}
               </button>
             </div>
           </div>
@@ -78,15 +177,15 @@ export default function WiFiMode({ onBack }) {
   }
 
   if (role === "host") {
-    return <HostView onBack={() => setRole("select")} />;
+    return <HostView onBack={() => setRole("select")} language={language} />;
   }
 
   if (role === "player") {
-    return <PlayerView roomCode={roomCode} onBack={() => setRole("select")} />;
+    return <PlayerView roomCode={roomCode} onBack={() => setRole("select")} language={language} />;
   }
 }
 
-function HostView({ onBack }) {
+function HostView({ onBack, language }) {
   const [roomCode] = useState(randomRoomCode());
   const [connections, setConnections] = useState(new Map()); // peerId -> { conn, name }
   const [players, setPlayers] = useState([]); // { id, name }
@@ -99,7 +198,6 @@ function HostView({ onBack }) {
   const [excludeAdult, setExcludeAdult] = useState(false);
   const [sendHintToImposter, setSendHintToImposter] = useState(false);
   const [hint, setHint] = useState("");
-  const [language, setLanguage] = useState("es"); // es | en
   const [roles, setRoles] = useState([]); // { playerId, name, isImposter, word }
   const [hostRole, setHostRole] = useState(null); // Host's own role
   const [gameRevealed, setGameRevealed] = useState(false);
@@ -402,16 +500,6 @@ function HostView({ onBack }) {
 
         {gameState === "setup" ? (
           <>
-            <div style={{ marginTop: 24 }}>
-              <label>
-                {language === "es" ? "Idioma" : "Language"}
-                <select value={language} onChange={(e) => { setLanguage(e.target.value); setCategoryId(""); }}>
-                  <option value="es">🇲🇽 Español</option>
-                  <option value="en">🇺🇸 English</option>
-                </select>
-              </label>
-            </div>
-
             <div style={{ marginTop: 16 }}>
               <label>
                 {language === "es" ? "Categoría" : "Category"}
@@ -583,13 +671,14 @@ function HostView({ onBack }) {
   );
 }
 
-function PlayerView({ roomCode, onBack }) {
+function PlayerView({ roomCode, onBack, language }) {
   const [connected, setConnected] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [gameData, setGameData] = useState(null); // { isImposter, word, useImposterWord }
   const [revealed, setRevealed] = useState(false);
   const [revealedRoles, setRevealedRoles] = useState(null); // All roles when game ends
+  const t = playerText[language];
 
   // Initialize player peer
   useEffect(() => {
@@ -657,41 +746,41 @@ function PlayerView({ roomCode, onBack }) {
       conn.on("close", () => {
         console.log("[Player] Disconnected from host");
         setConnected(false);
-        alert("Desconectado del anfitrión");
+        alert(t.disconnectedAlert);
       });
       
       conn.on("error", (err) => {
         console.error("[Player] Connection error:", err);
-        alert(`Error al conectar: ${err.type || err.message}`);
+        alert(`${t.connectionError}: ${err.type || err.message}`);
       });
     });
 
     newPeer.on("error", (err) => {
       console.error("[Player] Peer error:", err);
-      alert(`Error de conexión: ${err.type || err.message}\n\n¿El código de sala es correcto?`);
+      alert(`${t.peerError}: ${err.type || err.message}\n\n${t.codeCorrect}`);
     });
 
     return () => {
       if (conn) conn.close();
       newPeer.destroy();
     };
-  }, [nameSubmitted, roomCode, playerName]);
+  }, [nameSubmitted, roomCode, playerName, t]);
 
   if (!nameSubmitted) {
     return (
       <div className="wifi-mode">
         <div className="app-header">
           <button className="btn ghost small" onClick={onBack}>
-            ← Volver
+            {t.back}
           </button>
-          <h1>Unirse a Sala {roomCode}</h1>
+          <h1>{t.joinRoom} {roomCode}</h1>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
-          <h2 className="section-title">Ingresa tu nombre</h2>
+          <h2 className="section-title">{t.enterName}</h2>
           <input
             type="text"
-            placeholder="Tu nombre"
+            placeholder={t.namePlaceholder}
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             onKeyPress={(e) => {
@@ -712,7 +801,7 @@ function PlayerView({ roomCode, onBack }) {
             }}
             disabled={!playerName.trim()}
           >
-            Conectar
+            {t.connect}
           </button>
         </div>
       </div>
@@ -724,14 +813,14 @@ function PlayerView({ roomCode, onBack }) {
       <div className="wifi-mode">
         <div className="app-header">
           <button className="btn ghost small" onClick={onBack}>
-            ← Volver
+            {t.back}
           </button>
-          <h1>Conectando...</h1>
+          <h1>{t.connecting}</h1>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
-          <h2 className="section-title center">Sala {roomCode}</h2>
-          <p className="center muted">Conectando al anfitrión...</p>
+          <h2 className="section-title center">{t.room} {roomCode}</h2>
+          <p className="center muted">{t.connectingToHost}</p>
           <div style={{ textAlign: "center", marginTop: 24 }}>
             <div className="spinner"></div>
           </div>
@@ -744,14 +833,14 @@ function PlayerView({ roomCode, onBack }) {
     return (
       <div className="wifi-mode">
         <div className="app-header">
-          <h1>Sala {roomCode}</h1>
-          <p className="muted">Conectado como {playerName}</p>
+          <h1>{t.room} {roomCode}</h1>
+          <p className="muted">{t.connectedAs} {playerName}</p>
         </div>
 
         <div className="card" style={{ marginTop: 16 }}>
-          <h2 className="section-title center">Esperando que inicie el juego...</h2>
+          <h2 className="section-title center">{t.waitingForGame}</h2>
           <p className="center muted" style={{ marginTop: 16 }}>
-            El anfitrión configurará el juego y asignará los roles
+            {t.hostWillConfigure}
           </p>
         </div>
       </div>
@@ -761,13 +850,13 @@ function PlayerView({ roomCode, onBack }) {
   return (
     <div className="wifi-mode">
       <div className="app-header">
-        <h1>Sala {roomCode}</h1>
-        <p className="muted">Conectado como {playerName}</p>
+        <h1>{t.room} {roomCode}</h1>
+        <p className="muted">{t.connectedAs} {playerName}</p>
       </div>
 
       <div className="card player-card-view" style={{ marginTop: 16 }}>
         <div className="player-role-display">
-          <h2 className="section-title center">Tu Rol</h2>
+          <h2 className="section-title center">{t.yourRole}</h2>
           <div className="role-reveal-box" style={{
             padding: 24,
             borderRadius: "var(--radius-lg)",
@@ -777,15 +866,15 @@ function PlayerView({ roomCode, onBack }) {
           }}>
             <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
               {gameData.isImposter
-                ? "🔥 Eres el puto impostor cabrón/a"
-                : "✅ No eres el puto impostor cabrón/a"}
+                ? t.youAreImposter
+                : t.youAreNotImposter}
             </h1>
           </div>
 
           {gameData.word ? (
             <>
               <h2 className="section-title center" style={{ marginTop: 24 }}>
-                {gameData.isImposter && !gameData.useImposterWord ? "Tu Palabra" : "Palabra Secreta"}
+                {gameData.isImposter && !gameData.useImposterWord ? t.yourWord : t.secretWord}
               </h2>
               <div style={{
                 padding: 32,
@@ -803,8 +892,8 @@ function PlayerView({ roomCode, onBack }) {
             <div style={{ marginTop: 24, padding: 16, background: "var(--bg)", borderRadius: "var(--radius-md)" }}>
               <p className="center muted">
                 {gameData.isImposter
-                  ? "No tienes pista. Esperando que el anfitrión revele tu palabra..."
-                  : "Esperando palabra..."}
+                  ? t.noClueImposter
+                  : t.waitingWord}
               </p>
             </div>
           )}
@@ -818,12 +907,12 @@ function PlayerView({ roomCode, onBack }) {
             border: "2px solid var(--danger)",
             borderRadius: "var(--radius-md)",
           }}>
-            <h2 style={{ textAlign: "center", color: "var(--danger)", marginTop: 0 }}>¡Impostores Revelados!</h2>
-            <p className="center muted" style={{ marginBottom: 16 }}>El juego ha terminado</p>
+            <h2 style={{ textAlign: "center", color: "var(--danger)", marginTop: 0 }}>{t.impostersRevealed}</h2>
+            <p className="center muted" style={{ marginBottom: 16 }}>{t.gameOver}</p>
             
             {revealedRoles && (
               <div>
-                <h3 className="section-title">Resultados</h3>
+                <h3 className="section-title">{t.results}</h3>
                 {revealedRoles.map((role, idx) => (
                   <div key={idx} style={{ 
                     padding: "12px", 
@@ -840,11 +929,11 @@ function PlayerView({ roomCode, onBack }) {
                         background: "rgba(255,255,255,0.2)",
                         fontSize: "0.85rem"
                       }}>
-                        {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                        {role.isImposter ? t.imposter : t.crew}
                       </span>
                     </div>
                     <div style={{ marginTop: 8, fontSize: "0.9rem", opacity: 0.9 }}>
-                      Palabra: {role.word || "(sin pista)"}
+                      {t.word}: {role.word || t.noClue}
                     </div>
                   </div>
                 ))}
