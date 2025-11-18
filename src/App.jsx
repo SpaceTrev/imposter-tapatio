@@ -11,6 +11,7 @@ import { buildRoleMessage, openWhatsApp, formatPhoneDisplay } from "./utils/what
 const randomId = () => Math.random().toString(36).slice(2);
 
 const STORAGE_KEY = "imposter_players";
+const THEME_STORAGE_KEY = "imposter_theme";
 
 function loadPlayers() {
   try {
@@ -18,6 +19,15 @@ function loadPlayers() {
     return saved ? JSON.parse(saved) : [];
   } catch {
     return [];
+  }
+}
+
+function loadTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return saved || "light";
+  } catch {
+    return "light";
   }
 }
 
@@ -42,6 +52,13 @@ export default function App() {
   const [players, setPlayers] = useState(loadPlayers);
   const [nameInput, setNameInput] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
+  const [theme, setTheme] = useState(loadTheme);
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
 
   // Persist players to localStorage whenever they change
   useEffect(() => {
@@ -194,6 +211,10 @@ export default function App() {
     }
   }
 
+  function toggleTheme() {
+    setTheme(prev => prev === "light" ? "dark" : "light");
+  }
+
   const CurrentCategoryResolved = useMemo(() => {
     if (!round) return null;
     return getCategoryById(round.categoryId);
@@ -201,6 +222,14 @@ export default function App() {
 
   return (
     <div className="app">
+      <button 
+        className="theme-toggle" 
+        onClick={toggleTheme}
+        aria-label="Cambiar tema"
+      >
+        {theme === "light" ? "🌙" : "☀️"}
+      </button>
+      
       <header className="app-header">
         <h1>
           Imposter Radar <span className="badge">Web</span>
