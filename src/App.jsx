@@ -571,7 +571,7 @@ export default function App() {
                 </ul>
                 <div style={{ marginTop: 16, padding: 12, backgroundColor: "rgba(220, 38, 38, 0.1)", borderRadius: "8px" }}>
                   <p style={{ textAlign: "center", fontWeight: "bold", marginBottom: 8 }}>
-                    Palabra tripulación: <span style={{ color: "#10b981" }}>{round.commonWord}</span>
+                    Palabra secreta: <span style={{ color: "#10b981" }}>{round.commonWord}</span>
                   </p>
                   {round.useImposterWord && (
                     <p style={{ textAlign: "center", fontWeight: "bold" }}>
