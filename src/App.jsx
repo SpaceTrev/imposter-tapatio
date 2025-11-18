@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import HomePage from "./components/HomePage";
 import WhatsAppMode from "./components/WhatsAppMode";
+import ScreenMode from "./components/ScreenMode";
 import WiFiMode from "./components/WiFiMode";
 
 const THEME_STORAGE_KEY = "imposter_theme";
@@ -15,7 +16,7 @@ function loadTheme() {
 }
 
 export default function App() {
-  const [mode, setMode] = useState("home"); // home | whatsapp | wifi
+  const [mode, setMode] = useState("home"); // home | whatsapp | screen | wifi
   const [theme, setTheme] = useState(loadTheme);
 
   // Apply theme to document
@@ -40,6 +41,7 @@ export default function App() {
 
       {mode === "home" && <HomePage onSelectMode={setMode} />}
       {mode === "whatsapp" && <WhatsAppMode onBack={() => setMode("home")} />}
+      {mode === "screen" && <ScreenMode onBack={() => setMode("home")} />}
       {mode === "wifi" && <WiFiMode onBack={() => setMode("home")} />}
     </div>
   );

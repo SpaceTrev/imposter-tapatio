@@ -17,11 +17,23 @@ export default function HomePage({ onSelectMode }) {
           <div className="mode-icon">📱</div>
           <h2>Modo WhatsApp</h2>
           <p>
-            Manda roles por WhatsApp o pasa el cel entre los jugadores.
-            Perfecto para grupos que no están en el mismo lugar.
+            Manda roles por WhatsApp a cada jugador.
+            Ideal para grupos que no están juntos.
           </p>
           <button className="btn primary full">
             Jugar con WhatsApp
+          </button>
+        </div>
+
+        <div className="mode-card" onClick={() => onSelectMode("screen")}>
+          <div className="mode-icon">📲</div>
+          <h2>Modo Revelar en Pantalla</h2>
+          <p>
+            Pasa el celular entre jugadores para que vean su rol.
+            Perfecto para grupos juntos sin WiFi.
+          </p>
+          <button className="btn primary full">
+            Pasar el Celular
           </button>
         </div>
 
