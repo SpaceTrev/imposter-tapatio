@@ -430,9 +430,8 @@ export default function App() {
                 {r.revealedLocally && (
                   <div className="local-reveal">
                     <p>
-                      Rol:{" "}
                       <strong>
-                        {r.isImposter ? "IMPOSTOR" : "TRIPULANTE"}
+                        {r.isImposter ? "Eres el puto impostor cabrón/a" : "No eres el puto impostor cabrón/a"}
                       </strong>
                     </p>
                     {(!r.isImposter || round.useImposterWord) && (
