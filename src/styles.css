@@ -425,8 +425,171 @@ code {
   transform: scale(0.95);
 }
 
+/* HomePage Styles */
+.home-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 24px);
+}
+
+.home-hero {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.home-title {
+  font-size: 2.5rem;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.home-subtitle {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.mode-selection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 12px;
+}
+
+.mode-card {
+  background: var(--card);
+  border: 2px solid rgba(132, 96, 117, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .mode-card {
+  border: 2px solid rgba(55, 65, 81, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.mode-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(132, 96, 117, 0.2);
+}
+
+[data-theme="dark"] .mode-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.mode-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.mode-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.mode-card p {
+  color: var(--muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.home-footer {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+/* WiFi Mode Styles */
+.wifi-mode {
+  display: flex;
+  flex-direction: column;
+}
+
+.wifi-role-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.wifi-option-card {
+  background: var(--bg-alt);
+  border: 1px solid rgba(132, 96, 117, 0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .wifi-option-card {
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: #02081a;
+}
+
+.wifi-option-card:hover {
+  transform: scale(1.02);
+  border-color: var(--accent);
+}
+
+.wifi-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.wifi-option-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.room-code-display {
+  background: var(--bg-alt);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.player-card-view {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.player-role-display {
+  text-align: center;
+}
+
+.role-reveal-box, .word-display-box {
+  background: var(--bg-alt);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin: 16px 0;
+}
+
+.revelation-alert {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
 @media (min-width: 640px) {
   .app {
     padding: 16px 18px 20px;
+  }
+  
+  .mode-selection {
+    flex-direction: row;
+  }
+  
+  .mode-card {
+    flex: 1;
   }
 }
