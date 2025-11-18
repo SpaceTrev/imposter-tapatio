@@ -1,0 +1,26 @@
+Startup instrucciones (usando Vite + React):
+
+1. Crear un nuevo proyecto Vite React:
+   npm create vite@latest imposter-web -- --template react
+
+2. Entra a la carpeta del proyecto:
+   cd imposter-web
+
+3. Copia el contenido de este ZIP dentro del proyecto y sobrescribe:
+   - index.html
+   - src/main.jsx
+   - src/App.jsx
+   - src/styles.css
+   - src/data/categories.js
+   - src/utils/whatsapp.js
+
+4. Instala dependencias:
+   npm install
+
+5. Levanta el servidor de desarrollo:
+   npm run dev
+
+6. Abre en el navegador:
+   http://localhost:5173
+
+Listo, ya puedes registrar jugadores, generar una ronda y mandar los roles por WhatsApp.
