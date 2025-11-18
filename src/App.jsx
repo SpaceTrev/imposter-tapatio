@@ -58,6 +58,7 @@ export default function App() {
 
   const [step, setStep] = useState("setup"); // setup | round | summary
   const [round, setRound] = useState(null); // {categoryName, commonWord, imposterWord, roles[]}
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
 
   const maxImposters = useMemo(
     () => Math.max(1, players.length ? players.length - 1 : 1),
@@ -141,6 +142,7 @@ export default function App() {
       impostersRevealed: false,
     });
     setNumImposters(imposters);
+    setCurrentPlayerIndex(0);
     setStep("round");
   }
 
@@ -174,7 +176,22 @@ export default function App() {
 
   function resetToSetup() {
     setRound(null);
+    setCurrentPlayerIndex(0);
     setStep("setup");
+  }
+
+  function goToNextPlayer() {
+    if (currentPlayerIndex < players.length - 1) {
+      setCurrentPlayerIndex(prev => prev + 1);
+    } else {
+      goToSummary();
+    }
+  }
+
+  function goToPreviousPlayer() {
+    if (currentPlayerIndex > 0) {
+      setCurrentPlayerIndex(prev => prev - 1);
+    }
   }
 
   const CurrentCategoryResolved = useMemo(() => {
@@ -335,101 +352,126 @@ export default function App() {
           </section>
         )}
 
-        {step === "round" && round && (
-          <section className="card">
-            <h2 className="section-title">Enviar roles</h2>
-            <p className="muted">
-              Categoría: <strong>{round.categoryName}</strong> ·{" "}
-              {players.length} jugadores · {round.numImposters}{" "}
-              {round.numImposters === 1 ? "impostor" : "impostores"}
-            </p>
-            <p className="muted">
-              Palabra tripulación:{" "}
-              <strong>{round.commonWord}</strong> · Palabra impostor:{" "}
-              <strong>{round.imposterWord}</strong>
-            </p>
-            {round.hint && (
-              <p className="muted">
-                Pista: <em>{round.hint}</em>
+        {step === "round" && round && (() => {
+          const r = round.roles[currentPlayerIndex];
+          const player = players.find((p) => p.id === r.playerId);
+          if (!player) return null;
+          
+          const msg = buildRoleMessage({
+            playerName: player.name,
+            word: r.word,
+            isImposter: r.isImposter,
+            hint: r.isImposter && !round.sendHintToImposter ? "" : round.hint,
+            useImposterWord: round.useImposterWord,
+          });
+
+          const isLastPlayer = currentPlayerIndex === players.length - 1;
+
+          return (
+            <section className="card">
+              <div className="stepper-header">
+                <h2 className="section-title">Turno de {player.name}</h2>
+                <p className="muted">
+                  Jugador {currentPlayerIndex + 1} de {players.length}
+                </p>
+              </div>
+
+              <div className="stepper-progress" style={{ margin: "16px 0" }}>
+                <div style={{ 
+                  background: "var(--card)", 
+                  height: "8px", 
+                  borderRadius: "4px", 
+                  overflow: "hidden" 
+                }}>
+                  <div style={{ 
+                    background: "var(--accent)", 
+                    height: "100%", 
+                    width: `${((currentPlayerIndex + 1) / players.length) * 100}%`,
+                    transition: "width 0.3s ease"
+                  }} />
+                </div>
+              </div>
+
+              <p className="center" style={{ fontSize: "0.95rem", marginBottom: 24 }}>
+                Pasa el celular a <strong>{player.name}</strong> para que vea su rol
               </p>
-            )}
 
-            <div className="role-list">
-              {round.roles.map((r) => {
-                const player = players.find((p) => p.id === r.playerId);
-                if (!player) return null;
-                const msg = buildRoleMessage({
-                  playerName: player.name,
-                  word: r.word,
-                  isImposter: r.isImposter,
-                  hint: r.isImposter && !round.sendHintToImposter ? "" : round.hint,
-                  useImposterWord: round.useImposterWord,
-                });
-
-                return (
-                  <div key={r.playerId} className="role-card">
-                    <div className="role-header">
-                      <strong>{player.name}</strong>
-                      <span className="pill">
-                        {player.phone ? "Con número" : "Sin número"}
-                      </span>
-                    </div>
-                    <div className="role-actions">
-                      <button
-                        className="btn small"
-                        onClick={() => {
-                          if (!player.phone) {
-                            alert(
-                              "Este jugador no tiene teléfono registrado."
-                            );
-                            return;
-                          }
-                          openWhatsApp(player.phone, msg);
-                        }}
-                      >
-                        Enviar por WhatsApp
-                      </button>
-                      <button
-                        className="btn small secondary"
-                        onClick={() => toggleRevealLocal(player.id)}
-                      >
-                        {r.revealedLocally
-                          ? "Ocultar rol"
-                          : "Revelar en pantalla"}
-                      </button>
-                    </div>
-                    {r.revealedLocally && (
-                      <div className="local-reveal">
-                        <p>
-                          Rol:{" "}
-                          <strong>
-                            {r.isImposter ? "IMPOSTOR" : "TRIPULANTE"}
-                          </strong>
-                        </p>
-                        {(!r.isImposter || round.useImposterWord) && (
-                          <p>
-                            Palabra: <strong>{r.word}</strong>
-                          </p>
-                        )}
-                      </div>
+              <div className="role-card" style={{ marginBottom: 24 }}>
+                <div className="role-header">
+                  <strong>{player.name}</strong>
+                  <span className="pill">
+                    {player.phone ? "Con número" : "Sin número"}
+                  </span>
+                </div>
+                <div className="role-actions">
+                  <button
+                    className="btn small"
+                    onClick={() => {
+                      if (!player.phone) {
+                        alert(
+                          "Este jugador no tiene teléfono registrado."
+                        );
+                        return;
+                      }
+                      openWhatsApp(player.phone, msg);
+                    }}
+                  >
+                    Enviar por WhatsApp
+                  </button>
+                  <button
+                    className="btn small secondary"
+                    onClick={() => toggleRevealLocal(player.id)}
+                  >
+                    {r.revealedLocally
+                      ? "Ocultar rol"
+                      : "Revelar en pantalla"}
+                  </button>
+                </div>
+                {r.revealedLocally && (
+                  <div className="local-reveal">
+                    <p>
+                      Rol:{" "}
+                      <strong>
+                        {r.isImposter ? "IMPOSTOR" : "TRIPULANTE"}
+                      </strong>
+                    </p>
+                    {(!r.isImposter || round.useImposterWord) && (
+                      <p>
+                        Palabra: <strong>{r.word}</strong>
+                      </p>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
 
-            <button className="btn full" onClick={goToSummary}>
-              Todos tienen rol → Ir a discusión
-            </button>
-            <button
-              className="btn ghost full"
-              onClick={resetToSetup}
-              style={{ marginTop: 8 }}
-            >
-              Volver a configuración / cancelar ronda
-            </button>
-          </section>
-        )}
+              <div style={{ display: "flex", gap: "8px", marginBottom: 16 }}>
+                {currentPlayerIndex > 0 && (
+                  <button
+                    className="btn ghost"
+                    onClick={goToPreviousPlayer}
+                    style={{ flex: 1 }}
+                  >
+                    ← Anterior
+                  </button>
+                )}
+                <button
+                  className="btn primary"
+                  onClick={goToNextPlayer}
+                  style={{ flex: 2 }}
+                >
+                  {isLastPlayer ? "Iniciar juego →" : "Siguiente jugador →"}
+                </button>
+              </div>
+
+              <button
+                className="btn ghost full"
+                onClick={resetToSetup}
+              >
+                Cancelar ronda
+              </button>
+            </section>
+          );
+        })()}
 
         {step === "summary" && round && (
           <section className="card">
