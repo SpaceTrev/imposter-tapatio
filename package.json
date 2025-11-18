@@ -12,6 +12,7 @@
   "dependencies": {
     "concurrently": "^9.2.1",
     "html5-qrcode": "^2.3.8",
+    "peerjs": "^1.5.5",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
