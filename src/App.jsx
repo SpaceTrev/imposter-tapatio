@@ -135,7 +135,8 @@ export default function App() {
     const shuffledIds = shuffle(playerIds);
     const impSet = new Set(shuffledIds.slice(0, imposters));
 
-    const roles = shuffledIds.map((id) => ({
+    // Create roles in original player order for stepper, but with randomized imposters
+    const roles = playerIds.map((id) => ({
       playerId: id,
       isImposter: impSet.has(id),
       word: impSet.has(id) ? pair.imposter : pair.common,
@@ -143,7 +144,7 @@ export default function App() {
     }));
 
     // Randomly select starting player
-    const startingPlayerId = shuffledIds[Math.floor(Math.random() * shuffledIds.length)];
+    const startingPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
 
     setRound({
       categoryId: categoryId === "mixed" ? "mixed" : categoryId === "random" ? getCategoryById(categoryId).id : categoryId,
