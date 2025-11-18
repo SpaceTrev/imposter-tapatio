@@ -177,7 +177,7 @@ export default function App() {
     setStep("setup");
   }
 
-  const currentCategoryResolved = useMemo(() => {
+  const CurrentCategoryResolved = useMemo(() => {
     if (!round) return null;
     return getCategoryById(round.categoryId);
   }, [round]);
@@ -400,12 +400,14 @@ export default function App() {
                     </div>
                     {r.revealedLocally && (
                       <div className="local-reveal">
-                        <p>
-                          Rol:{" "}
-                          <strong>
-                            {r.isImposter ? "IMPOSTOR" : "TRIPULANTE"}
-                          </strong>
-                        </p>
+                        {round.useImposterWord && (
+                          <p>
+                            Rol:{" "}
+                            <strong>
+                              {r.isImposter ? "IMPOSTOR" : "TRIPULANTE"}
+                            </strong>
+                          </p>
+                        )}
                         <p>
                           Palabra: <strong>{r.word}</strong>
                         </p>
