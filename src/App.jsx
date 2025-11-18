@@ -135,7 +135,7 @@ export default function App() {
     const shuffledIds = shuffle(playerIds);
     const impSet = new Set(shuffledIds.slice(0, imposters));
 
-    const roles = playerIds.map((id) => ({
+    const roles = shuffledIds.map((id) => ({
       playerId: id,
       isImposter: impSet.has(id),
       word: impSet.has(id) ? pair.imposter : pair.common,
