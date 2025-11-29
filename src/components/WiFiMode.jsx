@@ -202,6 +202,7 @@ function HostView({ onBack, language }) {
   const [connections, setConnections] = useState(new Map()); // peerId -> { conn, name }
   const [players, setPlayers] = useState([]); // { id, name }
   const [hostName, setHostName] = useState("");
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [hostNameSet, setHostNameSet] = useState(false);
   const [gameState, setGameState] = useState("setup"); // setup | playing
   const [categoryId, setCategoryId] = useState("");
@@ -586,25 +587,61 @@ function HostView({ onBack, language }) {
             value={hostName}
             onChange={(e) => setHostName(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === "Enter" && hostName.trim()) {
+              if (e.key === "Enter" && hostName.trim() && selectedCharacter) {
                 setHostNameSet(true);
               }
             }}
             autoFocus
             style={{ marginTop: 8 }}
           />
+          
+          <h2 className="section-title" style={{ marginTop: 24 }}>
+            {language === "es" ? "Elige tu personaje" : "Choose your character"}
+          </h2>
+          <div className="character-grid">
+            {CHARACTERS.map((char) => (
+              <div
+                key={char.id}
+                className={`character-card ${selectedCharacter?.id === char.id ? 'selected' : ''}`}
+                onClick={() => setSelectedCharacter(char)}
+                style={{
+                  borderColor: selectedCharacter?.id === char.id ? char.colors.primary : undefined,
+                  boxShadow: selectedCharacter?.id === char.id ? `0 0 20px ${char.colors.primary}` : undefined,
+                }}
+              >
+                <div 
+                  style={{
+                    background: char.colors.gradient,
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: selectedCharacter?.id === char.id ? 0.15 : 0,
+                    transition: 'opacity 0.3s ease',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <div className="emoji" style={{ position: 'relative', zIndex: 1 }}>{char.emoji}</div>
+                <div className="name" style={{ position: 'relative', zIndex: 1 }}>{char.name}</div>
+              </div>
+            ))}
+          </div>
+          
           <button
             className="btn primary full"
             style={{ marginTop: 16 }}
             onClick={() => {
-              if (hostName.trim()) {
+              if (hostName.trim() && selectedCharacter) {
                 setHostNameSet(true);
               }
             }}
-            disabled={!hostName.trim()}
+            disabled={!hostName.trim() || !selectedCharacter}
           >
             Crear Sala
           </button>
+          {!selectedCharacter && hostName.trim() && (
+            <p className="center muted" style={{ marginTop: 8, fontSize: '0.8rem' }}>
+              {language === "es" ? "Selecciona un personaje para continuar" : "Select a character to continue"}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -1086,17 +1123,17 @@ function PlayerView({ roomCode, onBack, language }) {
                 }}
               >
                 <div 
-                  className="character-card-bg"
                   style={{
                     background: char.colors.gradient,
                     position: 'absolute',
                     inset: 0,
                     opacity: selectedCharacter?.id === char.id ? 0.15 : 0,
                     transition: 'opacity 0.3s ease',
+                    pointerEvents: 'none',
                   }}
                 />
-                <div className="emoji">{char.emoji}</div>
-                <div className="name">{char.name}</div>
+                <div className="emoji" style={{ position: 'relative', zIndex: 1 }}>{char.emoji}</div>
+                <div className="name" style={{ position: 'relative', zIndex: 1 }}>{char.name}</div>
               </div>
             ))}
           </div>

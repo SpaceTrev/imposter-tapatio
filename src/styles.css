@@ -818,6 +818,7 @@ code {
   background: var(--card);
   position: relative;
   overflow: hidden;
+  z-index: 1;
 }
 
 [data-theme="dark"] .character-card {
@@ -830,6 +831,7 @@ code {
   inset: 0;
   opacity: 0;
   transition: var(--transition-smooth);
+  pointer-events: none;
 }
 
 .character-card:hover {
@@ -851,6 +853,9 @@ code {
   font-size: 3rem;
   margin-bottom: 4px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .character-card .name {
@@ -859,6 +864,9 @@ code {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   text-align: center;
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 /* Player Avatar Badge */
