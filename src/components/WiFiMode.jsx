@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Peer } from "peerjs";
 import {
   CATEGORIES,
@@ -121,7 +120,6 @@ function shuffle(arr) {
 }
 
 export default function WiFiMode({ onBack, language = "es", mode, initialRoomCode }) {
-  const navigate = useNavigate();
   const [role, setRole] = useState(mode || "select"); // select | host | player
   const [roomCode, setRoomCode] = useState(initialRoomCode || "");
   const t = selectText[language];
@@ -197,7 +195,6 @@ export default function WiFiMode({ onBack, language = "es", mode, initialRoomCod
 }
 
 function HostView({ onBack, language }) {
-  const navigate = useNavigate();
   const [roomCode] = useState(randomRoomCode());
   const [connections, setConnections] = useState(new Map()); // peerId -> { conn, name }
   const [players, setPlayers] = useState([]); // { id, name }
@@ -206,6 +203,7 @@ function HostView({ onBack, language }) {
   const [hostNameSet, setHostNameSet] = useState(false);
   const [gameState, setGameState] = useState("setup"); // setup | playing
   const [categoryId, setCategoryId] = useState("");
+  const [currentCategoryId, setCurrentCategoryId] = useState(""); // Persist category for showImposterWord
   const [numImposters, setNumImposters] = useState(1);
   const [useImposterWord, setUseImposterWord] = useState(false);
   const [excludeAdult, setExcludeAdult] = useState(false);
@@ -216,13 +214,6 @@ function HostView({ onBack, language }) {
   const [gameRevealed, setGameRevealed] = useState(false);
   const [assignedRoles, setAssignedRoles] = useState(new Map()); // peerId -> role data, persists across disconnects
   const t = playerText[language];
-
-  // Navigate to room URL when host name is set
-  useEffect(() => {
-    if (hostNameSet && roomCode) {
-      navigate(`/wifi/host/${roomCode}`, { replace: true });
-    }
-  }, [hostNameSet, roomCode, navigate]);
 
   // Initialize PeerJS host
   useEffect(() => {
@@ -431,6 +422,9 @@ function HostView({ onBack, language }) {
       return;
     }
 
+    // Store category ID for later use (e.g., showImposterWord)
+    setCurrentCategoryId(category.id);
+
     // Get word pair
     const { common, imposter } = randomPairFn(category);
     
@@ -513,17 +507,16 @@ function HostView({ onBack, language }) {
   };
 
   const showImposterWord = () => {
-    // Find the imposter word from all roles (including host)
-    const allRoles = [hostRole, ...roles];
-    let imposterWord = allRoles.find(r => r.isImposter)?.word;
+    if (!currentCategoryId) return;
     
-    // If no word found, get it from the category
-    if (!imposterWord) {
-      const category = CATEGORIES.find(c => c.id === categoryId);
-      if (category && category.pairs.length > 0) {
-        imposterWord = randomPairFromCategory(category).imposter;
-      }
-    }
+    // Get word from stored category
+    const categoriesPool = language === "es" ? CATEGORIES : CATEGORIES_EN;
+    const randomPairFn = language === "es" ? randomPairFromCategory : randomPairFromCategory_EN;
+    const category = categoriesPool.find(c => c.id === currentCategoryId);
+    
+    if (!category || !category.pairs || category.pairs.length === 0) return;
+    
+    const { imposter: imposterWord } = randomPairFn(category);
     
     // Update host if they're the imposter
     if (hostRole && hostRole.isImposter && !hostRole.word) {
@@ -533,11 +526,18 @@ function HostView({ onBack, language }) {
       });
     }
     
+    // Update roles state for remote imposters
+    setRoles(prevRoles => 
+      prevRoles.map(role => 
+        role.isImposter && !role.word ? { ...role, word: imposterWord } : role
+      )
+    );
+    
     // Send to remote players who are imposters
     roles.forEach((role) => {
       if (role.isImposter) {
         const connData = connections.get(role.playerId);
-        if (connData) {
+        if (connData && connData.conn.open) {
           connData.conn.send({
             type: "show-imposter-word",
             word: imposterWord,
@@ -789,34 +789,66 @@ function HostView({ onBack, language }) {
             {/* Host's own role */}
             {hostRole && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{
-                  padding: 24,
-                  borderRadius: "var(--radius-lg)",
-                  background: hostRole.isImposter ? "var(--danger)" : "var(--accent)",
-                  color: "white",
-                  textAlign: "center",
-                }}>
-                  <h2 style={{ margin: 0, marginBottom: 8 }}>Tu Rol</h2>
-                  <h1 style={{ fontSize: "1.3rem", marginBottom: 16 }}>
-                    {hostRole.isImposter
-                      ? "🔥 Eres el puto impostor cabrón/a"
-                      : "✅ No eres el puto impostor cabrón/a"}
-                  </h1>
-                  {hostRole.word && (
-                    <div style={{
-                      padding: 16,
-                      borderRadius: "var(--radius-md)",
-                      background: "rgba(255,255,255,0.2)",
-                      marginTop: 12,
-                    }}>
-                      <div style={{ fontSize: "0.9rem", marginBottom: 4 }}>Tu Palabra</div>
-                      <h2 style={{ margin: 0, fontSize: "2rem" }}>{hostRole.word}</h2>
+                <div className="player-role-display">
+                  {selectedCharacter && (
+                    <div style={{ textAlign: "center", marginBottom: 16 }}>
+                      <div style={{ fontSize: "4rem", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}>
+                        {selectedCharacter.emoji}
+                      </div>
                     </div>
                   )}
-                  {hostRole.isImposter && !hostRole.word && (
-                    <p style={{ margin: "12px 0 0 0", opacity: 0.9 }}>
-                      Sin pista - esperando revelación de palabra
-                    </p>
+                  
+                  <h2 className="section-title center">Tu Rol</h2>
+                  <div className="role-reveal-box" style={{
+                    padding: 24,
+                    borderRadius: "var(--radius-lg)",
+                    background: hostRole.isImposter 
+                      ? "linear-gradient(135deg, #ef4444, #dc2626)" 
+                      : (selectedCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
+                    color: "white",
+                    textAlign: "center",
+                    boxShadow: selectedCharacter 
+                      ? `0 8px 32px ${hostRole.isImposter ? '#ef4444' : selectedCharacter.colors.primary}` 
+                      : undefined,
+                  }}>
+                    <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
+                      {hostRole.isImposter
+                        ? "🔥 Eres el puto impostor cabrón/a"
+                        : "✅ No eres el puto impostor cabrón/a"}
+                    </h1>
+                  </div>
+
+                  {hostRole.word ? (
+                    <>
+                      <h2 className="section-title center" style={{ marginTop: 24 }}>
+                        Tu Palabra
+                      </h2>
+                      <div style={{
+                        padding: 32,
+                        borderRadius: "var(--radius-lg)",
+                        background: "var(--card)",
+                        border: `3px solid ${selectedCharacter?.colors.primary || "var(--accent)"}`,
+                        textAlign: "center",
+                        boxShadow: selectedCharacter ? `0 4px 20px ${selectedCharacter.colors.primary}40` : undefined,
+                      }}>
+                        <h1 style={{ 
+                          fontSize: "2.5rem", 
+                          color: selectedCharacter?.colors.primary || "var(--accent)", 
+                          margin: 0,
+                          textShadow: selectedCharacter ? `0 0 20px ${selectedCharacter.colors.primary}60` : undefined,
+                        }}>
+                          {hostRole.word}
+                        </h1>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: 24, padding: 16, background: "var(--bg)", borderRadius: "var(--radius-md)" }}>
+                      <p className="center muted">
+                        {hostRole.isImposter
+                          ? "Sin pista - esperando revelación de palabra"
+                          : "Esperando palabra..."}
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -894,7 +926,6 @@ function HostView({ onBack, language }) {
 }
 
 function PlayerView({ roomCode, onBack, language }) {
-  const navigate = useNavigate();
   const [connected, setConnected] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [selectedCharacter, setSelectedCharacter] = useState(null);
@@ -905,18 +936,11 @@ function PlayerView({ roomCode, onBack, language }) {
   const [playerId, setPlayerId] = useState(null); // Store for reconnection
   const t = playerText[language];
 
-  // Navigate to room URL when name is submitted
-  useEffect(() => {
-    if (nameSubmitted && roomCode) {
-      navigate(`/wifi/player/${roomCode}`, { replace: true });
-    }
-  }, [nameSubmitted, roomCode, navigate]);
-
   // Restore player info on mount (for reconnection after reload)
   useEffect(() => {
-    const storedName = localStorage.getItem(`playerName_${roomCode}`);
-    const storedId = localStorage.getItem(`playerId_${roomCode}`);
-    const storedChar = localStorage.getItem(`playerChar_${roomCode}`);
+    const storedName = sessionStorage.getItem(`playerName_${roomCode}`);
+    const storedId = sessionStorage.getItem(`playerId_${roomCode}`);
+    const storedChar = sessionStorage.getItem(`playerChar_${roomCode}`);
     
     if (storedName && storedId) {
       console.log(`[Player] Restoring session: ${storedName} (${storedId})`);
@@ -1002,10 +1026,10 @@ function PlayerView({ roomCode, onBack, language }) {
           // If host sends playerId, store it for reconnection
           if (data.playerId) {
             setPlayerId(data.playerId);
-            localStorage.setItem(`playerId_${roomCode}`, data.playerId);
-            localStorage.setItem(`playerName_${roomCode}`, playerName);
+            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
             if (selectedCharacter) {
-              localStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
             }
             console.log(`[Player] Stored playerId: ${data.playerId}`);
           }
@@ -1017,10 +1041,10 @@ function PlayerView({ roomCode, onBack, language }) {
           // Store playerId if sent with role assignment
           if (data.playerId) {
             setPlayerId(data.playerId);
-            localStorage.setItem(`playerId_${roomCode}`, data.playerId);
-            localStorage.setItem(`playerName_${roomCode}`, playerName);
+            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
             if (selectedCharacter) {
-              localStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
             }
             console.log(`[Player] Stored playerId from role assignment: ${data.playerId}`);
           }
@@ -1053,9 +1077,9 @@ function PlayerView({ roomCode, onBack, language }) {
           setGameData(null);
           setRevealed(false);
           setRevealedRoles(null);
-          localStorage.removeItem(`playerId_${roomCode}`);
-          localStorage.removeItem(`playerName_${roomCode}`);
-          localStorage.removeItem(`playerChar_${roomCode}`);
+          sessionStorage.removeItem(`playerId_${roomCode}`);
+          sessionStorage.removeItem(`playerName_${roomCode}`);
+          sessionStorage.removeItem(`playerChar_${roomCode}`);
         }
       });
       
