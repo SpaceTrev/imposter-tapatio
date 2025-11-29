@@ -160,6 +160,7 @@ export default function WhatsAppMode({ onBack }) {
       numImposters: imposters,
       startingPlayerId,
       impostersRevealed: false,
+      imposterWordRevealed: false,
     });
     setNumImposters(imposters);
     setCurrentPlayerIndex(0);

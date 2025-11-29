@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   CATEGORIES,
   getCategoryById,
@@ -10,9 +11,18 @@ import {
 // import { CATEGORIES_EN, getCategoryById_EN, getRandomCategory_EN, randomPairFromCategory_EN } from "../data/categories-en";
 
 const randomId = () => Math.random().toString(36).slice(2);
+const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 const STORAGE_KEY = "imposter_players";
-const SESSION_KEY = "imposter_screen_session";
+
+// Session storage helpers with sala support
+function getSessionKey(salaCode) {
+  return salaCode ? `imposter_screen_sala_${salaCode}_session` : "imposter_screen_session";
+}
+
+function getPlayerTokenKey(salaCode) {
+  return salaCode ? `imposter_screen_player_token_${salaCode}` : null;
+}
 
 function loadPlayers() {
   try {
@@ -31,26 +41,29 @@ function savePlayers(players) {
   }
 }
 
-function loadSession() {
+function loadSession(salaCode = null) {
   try {
-    const saved = sessionStorage.getItem(SESSION_KEY);
+    const sessionKey = getSessionKey(salaCode);
+    const saved = sessionStorage.getItem(sessionKey);
     return saved ? JSON.parse(saved) : null;
   } catch {
     return null;
   }
 }
 
-function saveSession(data) {
+function saveSession(data, salaCode = null) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    const sessionKey = getSessionKey(salaCode);
+    sessionStorage.setItem(sessionKey, JSON.stringify(data));
   } catch (err) {
     console.warn("No se pudo guardar la sesión:", err);
   }
 }
 
-function clearSession() {
+function clearSession(salaCode = null) {
   try {
-    sessionStorage.removeItem(SESSION_KEY);
+    const sessionKey = getSessionKey(salaCode);
+    sessionStorage.removeItem(sessionKey);
   } catch (err) {
     console.warn("No se pudo limpiar la sesión:", err);
   }
@@ -66,6 +79,10 @@ function shuffle(arr) {
 }
 
 export default function ScreenMode({ onBack }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const salaCode = searchParams.get("sala");
+  
   const [players, setPlayers] = useState(loadPlayers);
   const [nameInput, setNameInput] = useState("");
 
@@ -75,7 +92,7 @@ export default function ScreenMode({ onBack }) {
 
   // Restore session on mount
   useEffect(() => {
-    const session = loadSession();
+    const session = loadSession(salaCode);
     if (session) {
       setStep(session.step);
       setRound(session.round);
@@ -88,7 +105,7 @@ export default function ScreenMode({ onBack }) {
       setCategoryId(session.categoryId);
       setHint(session.hint);
     }
-  }, []);
+  }, [salaCode]);
 
   const [numImposters, setNumImposters] = useState(1);
   const [allowAdult, setAllowAdult] = useState(false);
@@ -116,9 +133,42 @@ export default function ScreenMode({ onBack }) {
         useImposterWord,
         categoryId,
         hint,
-      });
+        salaCode,
+      }, salaCode);
     }
-  }, [step, round, currentPlayerIndex, numImposters, allowAdult, allowCustom, sendHintToImposter, useImposterWord, categoryId, hint]);
+  }, [step, round, currentPlayerIndex, numImposters, allowAdult, allowCustom, sendHintToImposter, useImposterWord, categoryId, hint, salaCode]);
+
+  // Handle player token detection and auto-reconnect for sala mode
+  useEffect(() => {
+    if (salaCode && step === 'round' && round) {
+      const tokenKey = getPlayerTokenKey(salaCode);
+      if (tokenKey) {
+        const storedToken = sessionStorage.getItem(tokenKey);
+        const currentPlayer = players[currentPlayerIndex];
+        const currentRole = round.roles.find(r => r.playerId === currentPlayer?.id);
+        
+        if (!storedToken && currentRole) {
+          // First time viewing role - store the token
+          sessionStorage.setItem(tokenKey, currentRole.playerToken);
+        } else if (storedToken && step === 'setup') {
+          // Page reload with token - find and restore player's role
+          const session = loadSession(salaCode);
+          if (session?.round) {
+            const playerRole = session.round.roles.find(r => r.playerToken === storedToken);
+            if (playerRole) {
+              // Auto-navigate to this player's role
+              const playerIndex = players.findIndex(p => p.id === playerRole.playerId);
+              if (playerIndex >= 0) {
+                setStep(session.step);
+                setRound(session.round);
+                setCurrentPlayerIndex(playerIndex);
+              }
+            }
+          }
+        }
+      }
+    }
+  }, [salaCode, step, round, currentPlayerIndex, players]);
 
   const maxImposters = useMemo(
     () => Math.max(1, players.length ? players.length - 1 : 1),
@@ -145,6 +195,14 @@ export default function ScreenMode({ onBack }) {
     if (players.length < 3) {
       alert("Necesitas al menos 3 jugadores.");
       return;
+    }
+
+    // Generate sala code if not already in sala mode
+    if (!salaCode) {
+      const newSalaCode = randomRoomCode();
+      navigate(`?sala=${newSalaCode}`, { replace: true });
+      // The URL change will trigger a re-render with the new salaCode
+      // We'll continue with the current execution since state hasn't updated yet
     }
 
     let imposters = numImposters;
@@ -181,6 +239,7 @@ export default function ScreenMode({ onBack }) {
       isImposter: impSet.has(id),
       word: impSet.has(id) ? (useImposterWord ? pair.imposter : null) : pair.common,
       revealedLocally: false,
+      playerToken: crypto.randomUUID(), // Generate unique token for each player
     }));
 
     const startingPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
@@ -231,7 +290,7 @@ export default function ScreenMode({ onBack }) {
       ...prev,
       imposterWordRevealed: true,
       roles: prev.roles.map(r => 
-        r.isImposter ? { ...r, word: prev.commonWord } : r
+        r.isImposter ? { ...r, word: prev.imposterWord } : r
       ),
     }));
   }
@@ -248,7 +307,7 @@ export default function ScreenMode({ onBack }) {
     setRound(null);
     setCurrentPlayerIndex(0);
     setStep("setup");
-    clearSession();
+    clearSession(salaCode);
   }
 
   function goToNextPlayer() {

@@ -429,11 +429,8 @@ function HostView({ onBack, language }) {
     // Get word pair
     const { common, imposter } = randomPairFn(category);
     
-    // Store imposter word for later reveal
-    setStoredImposterWord(imposter);
-    
-    // Store imposter word for later reveal
-    setStoredImposterWord(imposter);
+    // Store common word for later reveal to imposters (they need to see the secret word)
+    setStoredImposterWord(common);
     
     // Include host in player pool
     const allPlayers = [{ id: 'host', name: hostName }, ...players];
@@ -516,21 +513,21 @@ function HostView({ onBack, language }) {
   const showImposterWord = () => {
     if (!storedImposterWord) return;
     
-    // Use the stored imposter word from game start
-    const imposterWord = storedImposterWord;
+    // Use the stored common word (the secret word that crew has)
+    const secretWord = storedImposterWord;
     
-    // Update host if they're the imposter
-    if (hostRole && hostRole.isImposter && !hostRole.word) {
+    // Update host if they're the imposter - ALWAYS update, replacing their hint word
+    if (hostRole && hostRole.isImposter) {
       setHostRole({
         ...hostRole,
-        word: imposterWord
+        word: secretWord
       });
     }
     
-    // Update roles state for remote imposters
+    // Update roles state for remote imposters - ALWAYS update
     setRoles(prevRoles => 
       prevRoles.map(role => 
-        role.isImposter && !role.word ? { ...role, word: imposterWord } : role
+        role.isImposter ? { ...role, word: secretWord } : role
       )
     );
     
@@ -541,7 +538,7 @@ function HostView({ onBack, language }) {
         if (connData && connData.conn.open) {
           connData.conn.send({
             type: "show-imposter-word",
-            word: imposterWord,
+            word: secretWord,
           });
         }
       }
@@ -560,11 +557,13 @@ function HostView({ onBack, language }) {
     setStoredImposterWord(null);
     setCurrentCategoryId("");
     
-    // Reset configuration
+    // Reset configuration to defaults
     setCategoryId("");
     setNumImposters(1);
     setExcludeAdult(false);
-    setUseImposterWord(true);
+    // Keep useImposterWord as-is - it's a user preference, not game state
+    // Keep sendHintToImposter as-is - it's a user preference, not game state
+    // Keep hint as-is - it's a user preference, not game state
     
     // Notify all players
     connections.forEach((connData) => {
@@ -922,7 +921,7 @@ function HostView({ onBack, language }) {
                         padding: "6px 14px"
                       }}
                     >
-                      {hostRole.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                      {hostRole.isImposter ? "🔥 Impostor" : "✅ BANDA"}
                     </span>
                   </div>
                   <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
@@ -960,7 +959,7 @@ function HostView({ onBack, language }) {
                             padding: "6px 14px"
                           }}
                         >
-                          {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                          {role.isImposter ? "🔥 Impostor" : "✅ BANDA"}
                         </span>
                       </div>
                       <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
@@ -1391,7 +1390,7 @@ function PlayerView({ roomCode, onBack, language }) {
                           padding: "6px 14px"
                         }}
                       >
-                        {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                        {role.isImposter ? "🔥 Impostor" : "✅ BANDA"}
                       </span>
                     </div>
                     <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
