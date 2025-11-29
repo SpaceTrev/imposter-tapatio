@@ -12,6 +12,7 @@ import {
 const randomId = () => Math.random().toString(36).slice(2);
 
 const STORAGE_KEY = "imposter_players";
+const SESSION_KEY = "imposter_screen_session";
 
 function loadPlayers() {
   try {
@@ -27,6 +28,31 @@ function savePlayers(players) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
   } catch (err) {
     console.warn("No se pudo guardar en localStorage:", err);
+  }
+}
+
+function loadSession() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(data) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.warn("No se pudo guardar la sesión:", err);
+  }
+}
+
+function clearSession() {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (err) {
+    console.warn("No se pudo limpiar la sesión:", err);
   }
 }
 
@@ -47,6 +73,23 @@ export default function ScreenMode({ onBack }) {
     savePlayers(players);
   }, [players]);
 
+  // Restore session on mount
+  useEffect(() => {
+    const session = loadSession();
+    if (session) {
+      setStep(session.step);
+      setRound(session.round);
+      setCurrentPlayerIndex(session.currentPlayerIndex);
+      setNumImposters(session.numImposters);
+      setAllowAdult(session.allowAdult);
+      setAllowCustom(session.allowCustom);
+      setSendHintToImposter(session.sendHintToImposter);
+      setUseImposterWord(session.useImposterWord);
+      setCategoryId(session.categoryId);
+      setHint(session.hint);
+    }
+  }, []);
+
   const [numImposters, setNumImposters] = useState(1);
   const [allowAdult, setAllowAdult] = useState(false);
   const [allowCustom, setAllowCustom] = useState(false);
@@ -58,6 +101,24 @@ export default function ScreenMode({ onBack }) {
   const [step, setStep] = useState("setup");
   const [round, setRound] = useState(null);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+
+  // Save session whenever game state changes
+  useEffect(() => {
+    if (step !== 'setup' && round) {
+      saveSession({
+        step,
+        round,
+        currentPlayerIndex,
+        numImposters,
+        allowAdult,
+        allowCustom,
+        sendHintToImposter,
+        useImposterWord,
+        categoryId,
+        hint,
+      });
+    }
+  }, [step, round, currentPlayerIndex, numImposters, allowAdult, allowCustom, sendHintToImposter, useImposterWord, categoryId, hint]);
 
   const maxImposters = useMemo(
     () => Math.max(1, players.length ? players.length - 1 : 1),
@@ -118,7 +179,7 @@ export default function ScreenMode({ onBack }) {
     const roles = playerIds.map((id) => ({
       playerId: id,
       isImposter: impSet.has(id),
-      word: impSet.has(id) ? pair.imposter : pair.common,
+      word: impSet.has(id) ? (useImposterWord ? pair.imposter : null) : pair.common,
       revealedLocally: false,
     }));
 
@@ -136,6 +197,7 @@ export default function ScreenMode({ onBack }) {
       numImposters: imposters,
       startingPlayerId,
       impostersRevealed: false,
+      imposterWordRevealed: useImposterWord,
     });
     setNumImposters(imposters);
     setCurrentPlayerIndex(0);
@@ -162,6 +224,18 @@ export default function ScreenMode({ onBack }) {
     }));
   }
 
+  function showImposterWord() {
+    if (!round || round.imposterWordRevealed) return;
+    
+    setRound((prev) => ({
+      ...prev,
+      imposterWordRevealed: true,
+      roles: prev.roles.map(r => 
+        r.isImposter ? { ...r, word: prev.imposterWord } : r
+      ),
+    }));
+  }
+
   function goToSummary() {
     setStep("summary");
   }
@@ -174,6 +248,7 @@ export default function ScreenMode({ onBack }) {
     setRound(null);
     setCurrentPlayerIndex(0);
     setStep("setup");
+    clearSession();
   }
 
   function goToNextPlayer() {
@@ -384,11 +459,15 @@ export default function ScreenMode({ onBack }) {
                     <div className="role-text">
                       {r.isImposter ? "🔥 Eres el puto impostor cabrón/a" : "✅ No eres el puto impostor cabrón/a"}
                     </div>
-                    {(!r.isImposter || round.useImposterWord) && r.word && (
+                    {r.word ? (
                       <div className="word-text">
                         {r.word}
                       </div>
-                    )}
+                    ) : r.isImposter ? (
+                      <div className="word-text" style={{ fontSize: "1.2rem", opacity: 0.7 }}>
+                        Sin pista - esperando revelación
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -467,10 +546,19 @@ export default function ScreenMode({ onBack }) {
               Cambiar jugadores / categorías
             </button>
 
+            {!round.imposterWordRevealed && (
+              <button
+                className="btn full"
+                onClick={showImposterWord}
+                style={{ marginTop: 16, backgroundColor: "#8b5cf6" }}
+              >
+                Mostrar Palabra al Impostor
+              </button>
+            )}
             <button
               className="btn full"
               onClick={toggleImpostersRevealed}
-              style={{ marginTop: 16, backgroundColor: round.impostersRevealed ? "#dc2626" : "#eab308" }}
+              style={{ marginTop: round.imposterWordRevealed ? 16 : 8, backgroundColor: round.impostersRevealed ? "#dc2626" : "#eab308" }}
             >
               {round.impostersRevealed ? "Ocultar impostores" : "Revelar impostor"}
             </button>
