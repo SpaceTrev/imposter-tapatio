@@ -197,7 +197,7 @@ export default function ScreenMode({ onBack }) {
       numImposters: imposters,
       startingPlayerId,
       impostersRevealed: false,
-      imposterWordRevealed: useImposterWord,
+      imposterWordRevealed: false,
     });
     setNumImposters(imposters);
     setCurrentPlayerIndex(0);
@@ -231,7 +231,7 @@ export default function ScreenMode({ onBack }) {
       ...prev,
       imposterWordRevealed: true,
       roles: prev.roles.map(r => 
-        r.isImposter ? { ...r, word: prev.imposterWord } : r
+        r.isImposter ? { ...r, word: prev.commonWord } : r
       ),
     }));
   }

@@ -622,10 +622,18 @@ textarea:focus {
 }
 
 .local-reveal .role-text {
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   font-weight: 700;
   line-height: var(--leading-tight);
   margin-bottom: var(--space-3);
+  white-space: nowrap;
+  overflow: visible;
+}
+
+@media (min-width: 640px) {
+  .local-reveal .role-text {
+    font-size: var(--text-xl);
+  }
 }
 
 .local-reveal .word-text {
