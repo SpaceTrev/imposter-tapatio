@@ -328,20 +328,28 @@ function HostView({ onBack, language }) {
             return newPlayers;
           });
           
-          // Acknowledge
+          // Acknowledge with playerId so player can store it
           conn.send({ type: "connected", playerId, name: playerName });
-          console.log(`[Host] Sent acknowledgment to ${playerName}`);
+          console.log(`[Host] Sent acknowledgment to ${playerName} with playerId: ${playerId}`);
         }
       });
 
       conn.on("close", () => {
         console.log(`[Host] Player disconnected: ${conn.peer}`);
+        
+        // Don't remove from players list or assignedRoles to allow reconnection
+        // Only remove from active connections
         setConnections((prev) => {
           const newConns = new Map(prev);
           newConns.delete(conn.peer);
+          console.log(`[Host] Removed connection ${conn.peer}, remaining: ${newConns.size}`);
           return newConns;
         });
-        setPlayers((prev) => prev.filter(p => p.id !== conn.peer));
+        
+        // Only remove from players list if game hasn't started (no roles assigned yet)
+        if (gameState === "setup") {
+          setPlayers((prev) => prev.filter(p => p.id !== conn.peer));
+        }
       });
 
       conn.on("error", (err) => {
@@ -810,6 +818,19 @@ function PlayerView({ roomCode, onBack, language }) {
   const [playerId, setPlayerId] = useState(null); // Store for reconnection
   const t = playerText[language];
 
+  // Restore player info on mount (for reconnection after reload)
+  useEffect(() => {
+    const storedName = sessionStorage.getItem(`playerName_${roomCode}`);
+    const storedId = sessionStorage.getItem(`playerId_${roomCode}`);
+    
+    if (storedName && storedId) {
+      console.log(`[Player] Restoring session: ${storedName} (${storedId})`);
+      setPlayerName(storedName);
+      setPlayerId(storedId);
+      setNameSubmitted(true);
+    }
+  }, [roomCode]);
+
   // Warn before leaving/reloading
   useEffect(() => {
     const handleBeforeUnload = (e) => {
@@ -879,6 +900,7 @@ function PlayerView({ roomCode, onBack, language }) {
           if (data.playerId) {
             setPlayerId(data.playerId);
             sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
             console.log(`[Player] Stored playerId: ${data.playerId}`);
           }
         }
@@ -890,6 +912,7 @@ function PlayerView({ roomCode, onBack, language }) {
           if (data.playerId) {
             setPlayerId(data.playerId);
             sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
             console.log(`[Player] Stored playerId from role assignment: ${data.playerId}`);
           }
           
@@ -922,6 +945,7 @@ function PlayerView({ roomCode, onBack, language }) {
           setRevealed(false);
           setRevealedRoles(null);
           sessionStorage.removeItem(`playerId_${roomCode}`);
+          sessionStorage.removeItem(`playerName_${roomCode}`);
         }
       });
       
