@@ -498,11 +498,11 @@ function HostView({ onBack, language }) {
   const revealImposters = () => {
     setGameRevealed(true);
     
-    // Include host in the revealed roles, but hide imposter words if they don't have hints
+    // Include host in the revealed roles, show the common word for everyone in results
     const allRoles = [hostRole, ...roles].map(r => ({
       name: r.name,
       isImposter: r.isImposter,
-      word: (!r.isImposter || r.word) ? r.word : null // Only show word if not imposter OR if they already have it
+      word: r.isImposter ? (r.word || roles.find(role => !role.isImposter)?.word) : r.word // Show crew word for imposters
     }));
     
     connections.forEach((connData) => {
@@ -918,7 +918,8 @@ function HostView({ onBack, language }) {
                         background: "rgba(255,255,255,0.3)",
                         color: "white",
                         fontWeight: "bold",
-                        borderRadius: "999px"
+                        borderRadius: "999px",
+                        padding: "6px 14px"
                       }}
                     >
                       {hostRole.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
@@ -955,7 +956,8 @@ function HostView({ onBack, language }) {
                             background: "rgba(255,255,255,0.3)",
                             color: "white",
                             fontWeight: "bold",
-                            borderRadius: "999px"
+                            borderRadius: "999px",
+                            padding: "6px 14px"
                           }}
                         >
                           {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
@@ -1385,7 +1387,8 @@ function PlayerView({ roomCode, onBack, language }) {
                           background: "rgba(255,255,255,0.3)",
                           color: "white",
                           fontWeight: "bold",
-                          borderRadius: "999px"
+                          borderRadius: "999px",
+                          padding: "6px 14px"
                         }}
                       >
                         {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}

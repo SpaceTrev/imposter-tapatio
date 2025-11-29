@@ -754,14 +754,15 @@ export default function PlayMode({ onBack }) {
                             background: role.isImposter ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.3)",
                             color: "white",
                             fontWeight: "bold",
-                            borderRadius: "999px"
+                            borderRadius: "999px",
+                            padding: "6px 14px"
                           }}
                         >
                           {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
                         </span>
                       </div>
                       <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
-                        Palabra: {role.word || "(sin pista)"}
+                        Palabra: {role.isImposter ? (role.word || round.commonWord) : (role.word || "(sin pista)")}
                       </div>
                     </div>
                   );
