@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./components/HomePage";
-import WhatsAppMode from "./components/WhatsAppMode";
-import ScreenMode from "./components/ScreenMode";
+import PlayMode from "./components/PlayMode";
 import WiFiMode from "./components/WiFiMode";
 
 const THEME_STORAGE_KEY = "imposter_theme";
@@ -60,6 +59,8 @@ function AppContent({ theme, language, toggleTheme, toggleLanguage }) {
   const handleSelectMode = (mode) => {
     if (mode === "wifi") {
       navigate("/wifi");
+    } else if (mode === "play") {
+      navigate("/play");
     } else {
       navigate(`/${mode}`);
     }
@@ -86,8 +87,7 @@ function AppContent({ theme, language, toggleTheme, toggleLanguage }) {
 
       <Routes>
         <Route path="/" element={<HomePage onSelectMode={handleSelectMode} language={language} />} />
-        <Route path="/whatsapp" element={<WhatsAppMode onBack={() => navigate("/")} language={language} />} />
-        <Route path="/screen" element={<ScreenMode onBack={() => navigate("/")} language={language} />} />
+        <Route path="/play" element={<PlayMode onBack={() => navigate("/")} language={language} />} />
         <Route path="/wifi" element={<WiFiMode onBack={() => navigate("/")} language={language} />} />
         <Route path="/wifi/host/:roomCode" element={<WiFiHostRoute language={language} />} />
         <Route path="/wifi/player/:roomCode" element={<WiFiPlayerRoute language={language} />} />

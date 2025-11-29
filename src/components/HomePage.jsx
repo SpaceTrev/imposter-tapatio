@@ -5,15 +5,10 @@ const text = {
     title: "Imposter Radar",
     badge: "Tapatío",
     subtitle: "Elige tu modo de juego favorito",
-    whatsapp: {
-      title: "Modo WhatsApp",
-      description: "Manda roles por WhatsApp a cada jugador. Ideal para grupos que no están juntos.",
-      button: "Jugar con WhatsApp"
-    },
-    screen: {
-      title: "Modo Revelar en Pantalla",
-      description: "Pasa el celular entre jugadores para que vean su rol. Perfecto para grupos juntos sin WiFi.",
-      button: "Pasar el Celular"
+    play: {
+      title: "Jugar",
+      description: "Revela roles en pantalla y opcionalmente envía recordatorios por WhatsApp. Perfecto para grupos juntos.",
+      button: "Jugar Ahora"
     },
     wifi: {
       title: "Modo WiFi Local",
@@ -26,15 +21,10 @@ const text = {
     title: "Imposter Radar",
     badge: "Game",
     subtitle: "Choose your favorite game mode",
-    whatsapp: {
-      title: "WhatsApp Mode",
-      description: "Send roles via WhatsApp to each player. Ideal for groups not together.",
-      button: "Play with WhatsApp"
-    },
-    screen: {
-      title: "Pass the Phone Mode",
-      description: "Pass the phone between players to see their role. Perfect for groups together without WiFi.",
-      button: "Pass the Phone"
+    play: {
+      title: "Play",
+      description: "Reveal roles on screen and optionally send WhatsApp reminders. Perfect for groups together.",
+      button: "Play Now"
     },
     wifi: {
       title: "Local WiFi Mode",
@@ -59,25 +49,14 @@ export default function HomePage({ onSelectMode, language = "es" }) {
       </div>
 
       <div className="mode-selection">
-        <div className="mode-card" onClick={() => onSelectMode("whatsapp")}>
-          <div className="mode-icon">📱</div>
-          <h2>{t.whatsapp.title}</h2>
+        <div className="mode-card" onClick={() => onSelectMode("play")}>
+          <div className="mode-icon">🎮</div>
+          <h2>{t.play.title}</h2>
           <p>
-            {t.whatsapp.description}
+            {t.play.description}
           </p>
           <button className="btn primary full">
-            {t.whatsapp.button}
-          </button>
-        </div>
-
-        <div className="mode-card" onClick={() => onSelectMode("screen")}>
-          <div className="mode-icon">📲</div>
-          <h2>{t.screen.title}</h2>
-          <p>
-            {t.screen.description}
-          </p>
-          <button className="btn primary full">
-            {t.screen.button}
+            {t.play.button}
           </button>
         </div>
 

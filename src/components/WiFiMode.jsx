@@ -204,6 +204,7 @@ function HostView({ onBack, language }) {
   const [gameState, setGameState] = useState("setup"); // setup | playing
   const [categoryId, setCategoryId] = useState("");
   const [currentCategoryId, setCurrentCategoryId] = useState(""); // Persist category for showImposterWord
+  const [storedImposterWord, setStoredImposterWord] = useState(null); // Store imposter word from game start
   const [numImposters, setNumImposters] = useState(1);
   const [useImposterWord, setUseImposterWord] = useState(false);
   const [excludeAdult, setExcludeAdult] = useState(false);
@@ -428,6 +429,12 @@ function HostView({ onBack, language }) {
     // Get word pair
     const { common, imposter } = randomPairFn(category);
     
+    // Store imposter word for later reveal
+    setStoredImposterWord(imposter);
+    
+    // Store imposter word for later reveal
+    setStoredImposterWord(imposter);
+    
     // Include host in player pool
     const allPlayers = [{ id: 'host', name: hostName }, ...players];
     
@@ -507,16 +514,10 @@ function HostView({ onBack, language }) {
   };
 
   const showImposterWord = () => {
-    if (!currentCategoryId) return;
+    if (!storedImposterWord) return;
     
-    // Get word from stored category
-    const categoriesPool = language === "es" ? CATEGORIES : CATEGORIES_EN;
-    const randomPairFn = language === "es" ? randomPairFromCategory : randomPairFromCategory_EN;
-    const category = categoriesPool.find(c => c.id === currentCategoryId);
-    
-    if (!category || !category.pairs || category.pairs.length === 0) return;
-    
-    const { imposter: imposterWord } = randomPairFn(category);
+    // Use the stored imposter word from game start
+    const imposterWord = storedImposterWord;
     
     // Update host if they're the imposter
     if (hostRole && hostRole.isImposter && !hostRole.word) {
@@ -545,6 +546,8 @@ function HostView({ onBack, language }) {
         }
       }
     });
+    
+    setUseImposterWord(true);
   };
 
   const resetForNewGame = () => {
@@ -554,6 +557,8 @@ function HostView({ onBack, language }) {
     setRoles([]);
     setHostRole(null);
     setAssignedRoles(new Map());
+    setStoredImposterWord(null);
+    setCurrentCategoryId("");
     
     // Reset configuration
     setCategoryId("");
@@ -669,9 +674,18 @@ function HostView({ onBack, language }) {
 
         <div style={{ marginTop: 24 }}>
           <h3 className="section-title">Jugadores conectados ({players.length + 1})</h3>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-            <span className="pill" style={{ background: "var(--accent)", color: "white" }}>
-              👑 {hostName} (Tú)
+          <div style={{ display: "flex", flexWrap: "nowrap", gap: 8, marginTop: 8, overflowX: "auto", scrollbarWidth: "thin" }}>
+            <span 
+              className="player-avatar"
+              style={{
+                borderColor: selectedCharacter?.colors.primary || "var(--accent)",
+                background: selectedCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)",
+                color: "white",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {selectedCharacter && <span className="emoji">{selectedCharacter.emoji}</span>}
+              {hostName} (Tú)
             </span>
             {players.map((player) => {
               const character = player.character ? getCharacterById(player.character) : null;
@@ -803,12 +817,12 @@ function HostView({ onBack, language }) {
                     padding: 24,
                     borderRadius: "var(--radius-lg)",
                     background: hostRole.isImposter 
-                      ? "linear-gradient(135deg, #ef4444, #dc2626)" 
+                      ? "linear-gradient(135deg, #a855f7, #c084fc)" 
                       : (selectedCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
                     color: "white",
                     textAlign: "center",
                     boxShadow: selectedCharacter 
-                      ? `0 8px 32px ${hostRole.isImposter ? '#ef4444' : selectedCharacter.colors.primary}` 
+                      ? `0 8px 32px ${hostRole.isImposter ? '#a855f7' : selectedCharacter.colors.primary}40` 
                       : undefined,
                   }}>
                     <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
@@ -875,47 +889,84 @@ function HostView({ onBack, language }) {
             {/* Only show role list after game is revealed */}
             {gameRevealed && (
               <div style={{ marginTop: 16 }}>
-                <h4 className="section-title">Roles Revelados</h4>
+                <h4 className="section-title" style={{ 
+                  textTransform: "uppercase",
+                  fontSize: "1rem",
+                  letterSpacing: "0.05em",
+                  marginBottom: 16 
+                }}>Resultados</h4>
                 <div style={{ 
-                  padding: 12, 
-                  marginBottom: 8,
-                  borderRadius: "var(--radius-md)",
-                  background: hostRole.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                  border: `2px solid ${hostRole.isImposter ? "var(--danger)" : "var(--accent)"}`,
+                  padding: 20,
+                  marginBottom: 12,
+                  borderRadius: "var(--radius-lg)",
+                  background: hostRole.isImposter ? "#ef4444" : "#8b5687",
+                  color: "white",
                 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <strong>👑 {hostRole.name} (Tú)</strong>
-                    {hostRole.isImposter ? (
-                      <span className="pill-danger">Impostor</span>
-                    ) : (
-                      <span className="pill">BANDA</span>
-                    )}
+                  <div style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center",
+                    marginBottom: 12 
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {selectedCharacter && <span style={{ fontSize: "1.5rem" }}>{selectedCharacter.emoji}</span>}
+                      <strong style={{ fontSize: "1.1rem" }}>{hostRole.name} (Tú)</strong>
+                    </div>
+                    <span 
+                      className={hostRole.isImposter ? "pill-danger" : "pill"} 
+                      style={{ 
+                        background: "rgba(255,255,255,0.3)",
+                        color: "white",
+                        fontWeight: "bold",
+                        borderRadius: "999px"
+                      }}
+                    >
+                      {hostRole.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                    </span>
                   </div>
-                  <div className="muted" style={{ fontSize: "0.9rem" }}>
+                  <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
                     Palabra: {hostRole.word || "(sin pista)"}
                   </div>
                 </div>
-                {roles.map((role) => (
-                  <div key={role.playerId} style={{ 
-                    padding: 12, 
-                    marginBottom: 8,
-                    borderRadius: "var(--radius-md)",
-                    background: role.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                    border: `2px solid ${role.isImposter ? "var(--danger)" : "var(--accent)"}`,
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <strong>{role.name}</strong>
-                      {role.isImposter ? (
-                        <span className="pill-danger">Impostor</span>
-                      ) : (
-                        <span className="pill">BANDA</span>
-                      )}
+                {roles.map((role) => {
+                  const player = players.find(p => p.id === role.playerId);
+                  const character = player?.character ? getCharacterById(player.character) : null;
+                  return (
+                    <div key={role.playerId} style={{ 
+                      padding: 20,
+                      marginBottom: 12,
+                      borderRadius: "var(--radius-lg)",
+                      background: role.isImposter ? "#ef4444" : "#8b5687",
+                      color: "white",
+                    }}>
+                      <div style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        marginBottom: 12 
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {character && <span style={{ fontSize: "1.5rem" }}>{character.emoji}</span>}
+                          <strong style={{ fontSize: "1.1rem" }}>{role.name}</strong>
+                        </div>
+                        <span 
+                          className={role.isImposter ? "pill-danger" : "pill"} 
+                          style={{ 
+                            background: "rgba(255,255,255,0.3)",
+                            color: "white",
+                            fontWeight: "bold",
+                            borderRadius: "999px"
+                          }}
+                        >
+                          {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
+                        Palabra: {role.word || "(sin pista)"}
+                      </div>
                     </div>
-                    <div className="muted" style={{ fontSize: "0.9rem" }}>
-                      Palabra: {role.word || "(sin pista)"}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1245,12 +1296,12 @@ function PlayerView({ roomCode, onBack, language }) {
             padding: 24,
             borderRadius: "var(--radius-lg)",
             background: gameData.isImposter 
-              ? "linear-gradient(135deg, #ef4444, #dc2626)" 
+              ? "linear-gradient(135deg, #a855f7, #c084fc)" 
               : (selectedCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
             color: "white",
             textAlign: "center",
             boxShadow: selectedCharacter 
-              ? `0 8px 32px ${gameData.isImposter ? '#ef4444' : selectedCharacter.colors.primary}` 
+              ? `0 8px 32px ${gameData.isImposter ? '#a855f7' : selectedCharacter.colors.primary}40` 
               : undefined,
           }}>
             <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
@@ -1307,24 +1358,40 @@ function PlayerView({ roomCode, onBack, language }) {
             
             {revealedRoles && (
               <div>
-                <h3 className="section-title">{t.results}</h3>
+                <h3 className="section-title" style={{ 
+                  textTransform: "uppercase",
+                  fontSize: "1rem",
+                  letterSpacing: "0.05em",
+                  marginBottom: 16 
+                }}>{t.results}</h3>
                 {revealedRoles.map((role, idx) => (
                   <div key={idx} style={{ 
-                    padding: 12, 
-                    marginBottom: 8,
-                    borderRadius: "var(--radius-md)",
-                    background: role.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                    border: `2px solid ${role.isImposter ? "var(--danger)" : "var(--accent)"}`,
+                    padding: 20,
+                    marginBottom: 12,
+                    borderRadius: "var(--radius-lg)",
+                    background: role.isImposter ? "#ef4444" : "#8b5687",
+                    color: "white",
                   }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <strong>{role.name}</strong>
-                      {role.isImposter ? (
-                        <span className="pill-danger">Impostor</span>
-                      ) : (
-                        <span className="pill">BANDA</span>
-                      )}
+                    <div style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      marginBottom: 12 
+                    }}>
+                      <strong style={{ fontSize: "1.1rem" }}>{role.name}</strong>
+                      <span 
+                        className={role.isImposter ? "pill-danger" : "pill"} 
+                        style={{ 
+                          background: "rgba(255,255,255,0.3)",
+                          color: "white",
+                          fontWeight: "bold",
+                          borderRadius: "999px"
+                        }}
+                      >
+                        {role.isImposter ? "🔥 Impostor" : "✅ Tripulación"}
+                      </span>
                     </div>
-                    <div className="muted" style={{ fontSize: "0.9rem" }}>
+                    <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
                       {t.word}: {role.word || t.noClue}
                     </div>
                   </div>
