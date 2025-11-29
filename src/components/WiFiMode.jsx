@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Peer } from "peerjs";
 import {
   CATEGORIES,
@@ -119,10 +120,19 @@ function shuffle(arr) {
   return copy;
 }
 
-export default function WiFiMode({ onBack, language = "es" }) {
-  const [role, setRole] = useState("select"); // select | host | player
-  const [roomCode, setRoomCode] = useState("");
+export default function WiFiMode({ onBack, language = "es", mode, initialRoomCode }) {
+  const navigate = useNavigate();
+  const [role, setRole] = useState(mode || "select"); // select | host | player
+  const [roomCode, setRoomCode] = useState(initialRoomCode || "");
   const t = selectText[language];
+
+  // If mode and roomCode are provided via route, skip selection
+  useEffect(() => {
+    if (mode && initialRoomCode) {
+      setRole(mode);
+      setRoomCode(initialRoomCode);
+    }
+  }, [mode, initialRoomCode]);
 
   if (role === "select") {
     return (
@@ -187,6 +197,7 @@ export default function WiFiMode({ onBack, language = "es" }) {
 }
 
 function HostView({ onBack, language }) {
+  const navigate = useNavigate();
   const [roomCode] = useState(randomRoomCode());
   const [connections, setConnections] = useState(new Map()); // peerId -> { conn, name }
   const [players, setPlayers] = useState([]); // { id, name }
@@ -204,6 +215,13 @@ function HostView({ onBack, language }) {
   const [gameRevealed, setGameRevealed] = useState(false);
   const [assignedRoles, setAssignedRoles] = useState(new Map()); // peerId -> role data, persists across disconnects
   const t = playerText[language];
+
+  // Navigate to room URL when host name is set
+  useEffect(() => {
+    if (hostNameSet && roomCode) {
+      navigate(`/wifi/host/${roomCode}`, { replace: true });
+    }
+  }, [hostNameSet, roomCode, navigate]);
 
   // Initialize PeerJS host
   useEffect(() => {
@@ -466,7 +484,7 @@ function HostView({ onBack, language }) {
       if (connData) {
         connData.conn.send({
           type: "role-assignment",
-          playerId: role.playerId, // Include playerId for sessionStorage
+          playerId: role.playerId, // Include playerId for localStorage
           isImposter: role.isImposter,
           word: role.word,
           useImposterWord,
@@ -839,6 +857,7 @@ function HostView({ onBack, language }) {
 }
 
 function PlayerView({ roomCode, onBack, language }) {
+  const navigate = useNavigate();
   const [connected, setConnected] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [selectedCharacter, setSelectedCharacter] = useState(null);
@@ -849,11 +868,18 @@ function PlayerView({ roomCode, onBack, language }) {
   const [playerId, setPlayerId] = useState(null); // Store for reconnection
   const t = playerText[language];
 
+  // Navigate to room URL when name is submitted
+  useEffect(() => {
+    if (nameSubmitted && roomCode) {
+      navigate(`/wifi/player/${roomCode}`, { replace: true });
+    }
+  }, [nameSubmitted, roomCode, navigate]);
+
   // Restore player info on mount (for reconnection after reload)
   useEffect(() => {
-    const storedName = sessionStorage.getItem(`playerName_${roomCode}`);
-    const storedId = sessionStorage.getItem(`playerId_${roomCode}`);
-    const storedChar = sessionStorage.getItem(`playerChar_${roomCode}`);
+    const storedName = localStorage.getItem(`playerName_${roomCode}`);
+    const storedId = localStorage.getItem(`playerId_${roomCode}`);
+    const storedChar = localStorage.getItem(`playerChar_${roomCode}`);
     
     if (storedName && storedId) {
       console.log(`[Player] Restoring session: ${storedName} (${storedId})`);
@@ -939,10 +965,10 @@ function PlayerView({ roomCode, onBack, language }) {
           // If host sends playerId, store it for reconnection
           if (data.playerId) {
             setPlayerId(data.playerId);
-            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
-            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
+            localStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            localStorage.setItem(`playerName_${roomCode}`, playerName);
             if (selectedCharacter) {
-              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+              localStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
             }
             console.log(`[Player] Stored playerId: ${data.playerId}`);
           }
@@ -954,10 +980,10 @@ function PlayerView({ roomCode, onBack, language }) {
           // Store playerId if sent with role assignment
           if (data.playerId) {
             setPlayerId(data.playerId);
-            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
-            sessionStorage.setItem(`playerName_${roomCode}`, playerName);
+            localStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            localStorage.setItem(`playerName_${roomCode}`, playerName);
             if (selectedCharacter) {
-              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+              localStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
             }
             console.log(`[Player] Stored playerId from role assignment: ${data.playerId}`);
           }
@@ -990,9 +1016,9 @@ function PlayerView({ roomCode, onBack, language }) {
           setGameData(null);
           setRevealed(false);
           setRevealedRoles(null);
-          sessionStorage.removeItem(`playerId_${roomCode}`);
-          sessionStorage.removeItem(`playerName_${roomCode}`);
-          sessionStorage.removeItem(`playerChar_${roomCode}`);
+          localStorage.removeItem(`playerId_${roomCode}`);
+          localStorage.removeItem(`playerName_${roomCode}`);
+          localStorage.removeItem(`playerChar_${roomCode}`);
         }
       });
       

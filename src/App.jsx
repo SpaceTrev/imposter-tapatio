@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, useNavigate, useParams } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import WhatsAppMode from "./components/WhatsAppMode";
 import ScreenMode from "./components/ScreenMode";
@@ -25,8 +26,77 @@ function loadLanguage() {
   }
 }
 
+function WiFiHostRoute({ language }) {
+  const navigate = useNavigate();
+  const { roomCode } = useParams();
+  
+  return (
+    <WiFiMode 
+      mode="host" 
+      initialRoomCode={roomCode}
+      onBack={() => navigate("/")} 
+      language={language} 
+    />
+  );
+}
+
+function WiFiPlayerRoute({ language }) {
+  const navigate = useNavigate();
+  const { roomCode } = useParams();
+  
+  return (
+    <WiFiMode 
+      mode="player" 
+      initialRoomCode={roomCode}
+      onBack={() => navigate("/")} 
+      language={language} 
+    />
+  );
+}
+
+function AppContent({ theme, language, toggleTheme, toggleLanguage }) {
+  const navigate = useNavigate();
+  
+  const handleSelectMode = (mode) => {
+    if (mode === "wifi") {
+      navigate("/wifi");
+    } else {
+      navigate(`/${mode}`);
+    }
+  };
+
+  return (
+    <div className="app">
+      <div className="app-controls">
+        <button 
+          className="theme-toggle" 
+          onClick={toggleTheme}
+          aria-label={language === "es" ? "Cambiar tema" : "Toggle theme"}
+        >
+          {theme === "light" ? "🌙" : "☀️"}
+        </button>
+        <button 
+          className="language-toggle" 
+          onClick={toggleLanguage}
+          aria-label={language === "es" ? "Cambiar idioma" : "Change language"}
+        >
+          {language === "es" ? "🇺🇸" : "🇲🇽"}
+        </button>
+      </div>
+
+      <Routes>
+        <Route path="/" element={<HomePage onSelectMode={handleSelectMode} language={language} />} />
+        <Route path="/whatsapp" element={<WhatsAppMode onBack={() => navigate("/")} language={language} />} />
+        <Route path="/screen" element={<ScreenMode onBack={() => navigate("/")} language={language} />} />
+        <Route path="/wifi" element={<WiFiMode onBack={() => navigate("/")} language={language} />} />
+        <Route path="/wifi/host/:roomCode" element={<WiFiHostRoute language={language} />} />
+        <Route path="/wifi/player/:roomCode" element={<WiFiPlayerRoute language={language} />} />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
-  const [mode, setMode] = useState("home"); // home | whatsapp | screen | wifi
   const [theme, setTheme] = useState(loadTheme);
   const [language, setLanguage] = useState(loadLanguage);
 
@@ -50,28 +120,13 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <div className="app-controls">
-        <button 
-          className="theme-toggle" 
-          onClick={toggleTheme}
-          aria-label={language === "es" ? "Cambiar tema" : "Toggle theme"}
-        >
-          {theme === "light" ? "🌙" : "☀️"}
-        </button>
-        <button 
-          className="language-toggle" 
-          onClick={toggleLanguage}
-          aria-label={language === "es" ? "Cambiar idioma" : "Change language"}
-        >
-          {language === "es" ? "🇺🇸" : "🇲🇽"}
-        </button>
-      </div>
-
-      {mode === "home" && <HomePage onSelectMode={setMode} language={language} />}
-      {mode === "whatsapp" && <WhatsAppMode onBack={() => setMode("home")} language={language} />}
-      {mode === "screen" && <ScreenMode onBack={() => setMode("home")} language={language} />}
-      {mode === "wifi" && <WiFiMode onBack={() => setMode("home")} language={language} />}
-    </div>
+    <BrowserRouter>
+      <AppContent 
+        theme={theme} 
+        language={language} 
+        toggleTheme={toggleTheme} 
+        toggleLanguage={toggleLanguage} 
+      />
+    </BrowserRouter>
   );
 }
