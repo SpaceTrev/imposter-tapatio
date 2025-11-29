@@ -67,8 +67,8 @@ const playerText = {
     impostersRevealed: "¡Impostores Revelados!",
     gameOver: "El juego ha terminado",
     results: "Resultados",
-    imposter: "🔥 Impostor",
-    crew: "✅ Tripulación",
+    imposter: "impostor",
+    crew: "BANDA",
     word: "Palabra",
     noClue: "(sin pista)",
     disconnectedAlert: "Desconectado del anfitrión",
@@ -98,8 +98,8 @@ const playerText = {
     impostersRevealed: "Imposters Revealed!",
     gameOver: "Game is over",
     results: "Results",
-    imposter: "🔥 Imposter",
-    crew: "✅ Crew",
+    imposter: "imposter",
+    crew: "CREW",
     word: "Word",
     noClue: "(no clue)",
     disconnectedAlert: "Disconnected from host",
@@ -201,6 +201,8 @@ function HostView({ onBack, language }) {
   const [roles, setRoles] = useState([]); // { playerId, name, isImposter, word }
   const [hostRole, setHostRole] = useState(null); // Host's own role
   const [gameRevealed, setGameRevealed] = useState(false);
+  const [assignedRoles, setAssignedRoles] = useState(new Map()); // peerId -> role data, persists across disconnects
+  const t = playerText[language];
 
   // Initialize PeerJS host
   useEffect(() => {
@@ -232,9 +234,81 @@ function HostView({ onBack, language }) {
         if (data.type === "player-name") {
           const playerName = data.name;
           const playerId = conn.peer;
+          const reconnectId = data.reconnectId; // Old playerId they're trying to reclaim
           
           console.log(`[Host] Player ${playerId} identified as "${playerName}"`);
+          if (reconnectId) {
+            console.log(`[Host] Player attempting to reconnect with ID: ${reconnectId}`);
+          }
           
+          // Check if this is a reconnection attempt
+          if (reconnectId && assignedRoles.has(reconnectId)) {
+            const existingRole = assignedRoles.get(reconnectId);
+            console.log(`[Host] Reconnection successful! Restoring role for ${playerName}`);
+            
+            // Update the role's playerId to the new peer ID
+            const updatedRole = { ...existingRole, playerId };
+            assignedRoles.set(playerId, updatedRole);
+            assignedRoles.delete(reconnectId);
+            setAssignedRoles(new Map(assignedRoles));
+            
+            // Update connections
+            setConnections((prev) => {
+              const newConns = new Map(prev);
+              newConns.set(playerId, { conn, name: playerName });
+              return newConns;
+            });
+            
+            // Update players list
+            setPlayers((prev) => {
+              const filtered = prev.filter(p => p.id !== reconnectId);
+              return [...filtered, { id: playerId, name: playerName }];
+            });
+            
+            // Update roles list if in playing state
+            if (gameState === "playing") {
+              setRoles((prev) => 
+                prev.map(r => r.playerId === reconnectId ? updatedRole : r)
+              );
+            }
+            
+            // Send acknowledgment with existing role
+            conn.send({ 
+              type: "connected", 
+              playerId, 
+              name: playerName,
+              reconnected: true 
+            });
+            
+            // If game is already playing, send their role back
+            if (gameState === "playing") {
+              conn.send({
+                type: "role-assignment",
+                playerId: playerId,
+                isImposter: updatedRole.isImposter,
+                word: updatedRole.word,
+                useImposterWord,
+              });
+            }
+            
+            // If game was revealed, send that info too
+            if (gameRevealed) {
+              const allRoles = [hostRole, ...roles].map(r => ({
+                name: r.name,
+                isImposter: r.isImposter,
+                word: (!r.isImposter || r.word) ? r.word : null
+              }));
+              
+              conn.send({ 
+                type: "reveal-imposters",
+                allRoles
+              });
+            }
+            
+            return;
+          }
+          
+          // Normal new player connection
           // Add to connections
           setConnections((prev) => {
             const newConns = new Map(prev);
@@ -285,6 +359,21 @@ function HostView({ onBack, language }) {
       newPeer.destroy();
     };
   }, [roomCode]);
+
+  // Warn before leaving/reloading
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Si sales, se cerrará la sala y todos los jugadores serán desconectados.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const startGame = () => {
     if (players.length < 2) {
@@ -342,6 +431,17 @@ function HostView({ onBack, language }) {
       };
     });
     
+    // Store roles in assignedRoles Map for reconnection
+    const newAssignedRoles = new Map();
+    gameRoles.forEach(role => {
+      newAssignedRoles.set(role.playerId, {
+        isImposter: role.isImposter,
+        word: role.word,
+        name: role.name
+      });
+    });
+    setAssignedRoles(newAssignedRoles);
+    
     // Separate host role
     const hostRoleData = gameRoles.find(r => r.playerId === 'host');
     const playerRoles = gameRoles.filter(r => r.playerId !== 'host');
@@ -350,12 +450,13 @@ function HostView({ onBack, language }) {
     setRoles(playerRoles);
     setGameState("playing");
     
-    // Send roles to each remote player
+    // Send roles to each remote player (including playerId for reconnection)
     playerRoles.forEach((role) => {
       const connData = connections.get(role.playerId);
       if (connData) {
         connData.conn.send({
           type: "role-assignment",
+          playerId: role.playerId, // Include playerId for sessionStorage
           isImposter: role.isImposter,
           word: role.word,
           useImposterWord,
@@ -414,6 +515,26 @@ function HostView({ onBack, language }) {
           });
         }
       }
+    });
+  };
+
+  const resetForNewGame = () => {
+    // Reset all game state
+    setGameState("setup");
+    setGameRevealed(false);
+    setRoles([]);
+    setHostRole(null);
+    setAssignedRoles(new Map());
+    
+    // Reset configuration
+    setCategoryId("");
+    setNumImposters(1);
+    setExcludeAdult(false);
+    setUseImposterWord(true);
+    
+    // Notify all players
+    connections.forEach((connData) => {
+      connData.conn.send({ type: "game-reset" });
     });
   };
 
@@ -625,12 +746,20 @@ function HostView({ onBack, language }) {
             )}
 
             <h3 className="section-title">Controles de Revelación</h3>
-            <button className="btn full" style={{ marginBottom: 8 }} onClick={revealImposters}>
-              Revelar Impostores a Todos
-            </button>
-            {!useImposterWord && (
-              <button className="btn ghost full" onClick={showImposterWord}>
-                Mostrar Palabra al Impostor
+            {!gameRevealed ? (
+              <>
+                <button className="btn full" style={{ marginBottom: 8 }} onClick={revealImposters}>
+                  Revelar Impostores a Todos
+                </button>
+                {!useImposterWord && (
+                  <button className="btn ghost full" onClick={showImposterWord}>
+                    Mostrar Palabra al Impostor
+                  </button>
+                )}
+              </>
+            ) : (
+              <button className="btn primary full" onClick={resetForNewGame}>
+                🎮 Nueva Ronda
               </button>
             )}
             
@@ -643,7 +772,7 @@ function HostView({ onBack, language }) {
                   {hostRole.isImposter ? (
                     <span className="pill-danger" style={{ marginLeft: 8 }}>Impostor</span>
                   ) : (
-                    <span className="pill" style={{ marginLeft: 8 }}>Tripulación</span>
+                    <span className="pill" style={{ marginLeft: 8 }}>BANDA</span>
                   )}
                   <div className="muted" style={{ fontSize: "0.9rem", marginTop: 4 }}>
                     Palabra: {hostRole.word || "(sin pista)"}
@@ -655,7 +784,7 @@ function HostView({ onBack, language }) {
                     {role.isImposter ? (
                       <span className="pill-danger" style={{ marginLeft: 8 }}>Impostor</span>
                     ) : (
-                      <span className="pill" style={{ marginLeft: 8 }}>Tripulación</span>
+                      <span className="pill" style={{ marginLeft: 8 }}>BANDA</span>
                     )}
                     <div className="muted" style={{ fontSize: "0.9rem", marginTop: 4 }}>
                       Palabra: {role.word || "(sin pista)"}
@@ -678,7 +807,25 @@ function PlayerView({ roomCode, onBack, language }) {
   const [gameData, setGameData] = useState(null); // { isImposter, word, useImposterWord }
   const [revealed, setRevealed] = useState(false);
   const [revealedRoles, setRevealedRoles] = useState(null); // All roles when game ends
+  const [playerId, setPlayerId] = useState(null); // Store for reconnection
   const t = playerText[language];
+
+  // Warn before leaving/reloading
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (connected || nameSubmitted) {
+        e.preventDefault();
+        e.returnValue = 'Si sales, perderás tu conexión con la sala.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [connected, nameSubmitted]);
 
   // Initialize player peer
   useEffect(() => {
@@ -704,9 +851,21 @@ function PlayerView({ roomCode, onBack, language }) {
       conn.on("open", () => {
         console.log("[Player] Connection established with host");
         
-        // Send player name
-        console.log(`[Player] Sending name: ${playerName}`);
-        conn.send({ type: "player-name", name: playerName });
+        // Check for reconnection ID in sessionStorage
+        const reconnectId = sessionStorage.getItem(`playerId_${roomCode}`);
+        
+        if (reconnectId) {
+          console.log(`[Player] Attempting reconnection with ID: ${reconnectId}`);
+          conn.send({ 
+            type: "player-name", 
+            name: playerName,
+            reconnectId
+          });
+        } else {
+          // Fresh connection
+          console.log(`[Player] Fresh connection, sending name: ${playerName}`);
+          conn.send({ type: "player-name", name: playerName });
+        }
       });
       
       conn.on("data", (data) => {
@@ -715,10 +874,25 @@ function PlayerView({ roomCode, onBack, language }) {
         if (data.type === "connected") {
           console.log("[Player] Connection acknowledged by host");
           setConnected(true);
+          
+          // If host sends playerId, store it for reconnection
+          if (data.playerId) {
+            setPlayerId(data.playerId);
+            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            console.log(`[Player] Stored playerId: ${data.playerId}`);
+          }
         }
         
         if (data.type === "role-assignment") {
           console.log("[Player] Role assigned:", data);
+          
+          // Store playerId if sent with role assignment
+          if (data.playerId) {
+            setPlayerId(data.playerId);
+            sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
+            console.log(`[Player] Stored playerId from role assignment: ${data.playerId}`);
+          }
+          
           setGameData({
             isImposter: data.isImposter,
             word: data.word,
@@ -740,6 +914,14 @@ function PlayerView({ roomCode, onBack, language }) {
             ...prev,
             word: data.word,
           }));
+        }
+        
+        if (data.type === "game-reset") {
+          console.log("[Player] Game reset by host");
+          setGameData(null);
+          setRevealed(false);
+          setRevealedRoles(null);
+          sessionStorage.removeItem(`playerId_${roomCode}`);
         }
       });
       
@@ -915,24 +1097,21 @@ function PlayerView({ roomCode, onBack, language }) {
                 <h3 className="section-title">{t.results}</h3>
                 {revealedRoles.map((role, idx) => (
                   <div key={idx} style={{ 
-                    padding: "12px", 
+                    padding: 12, 
                     marginBottom: 8,
                     borderRadius: "var(--radius-md)",
-                    background: role.isImposter ? "var(--danger)" : "var(--accent)",
-                    color: "white"
+                    background: role.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                    border: `2px solid ${role.isImposter ? "var(--danger)" : "var(--accent)"}`,
                   }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <strong>{role.name}</strong>
-                      <span style={{ 
-                        padding: "4px 8px", 
-                        borderRadius: "12px",
-                        background: "rgba(255,255,255,0.2)",
-                        fontSize: "0.85rem"
-                      }}>
-                        {role.isImposter ? t.imposter : t.crew}
-                      </span>
+                      {role.isImposter ? (
+                        <span className="pill-danger">Impostor</span>
+                      ) : (
+                        <span className="pill">BANDA</span>
+                      )}
                     </div>
-                    <div style={{ marginTop: 8, fontSize: "0.9rem", opacity: 0.9 }}>
+                    <div className="muted" style={{ fontSize: "0.9rem" }}>
                       {t.word}: {role.word || t.noClue}
                     </div>
                   </div>
