@@ -407,26 +407,18 @@ export default function WhatsAppMode({ onBack }) {
 
           return (
             <section className="card">
-              <div className="stepper-header">
-                <h2 className="section-title">Turno de {player.name}</h2>
-                <p className="muted">
+              <div className="stepper-container">
+                <div className="stepper-header">
                   Jugador {currentPlayerIndex + 1} de {players.length}
-                </p>
-              </div>
-
-              <div className="stepper-progress" style={{ margin: "16px 0" }}>
-                <div style={{ 
-                  background: "var(--card)", 
-                  height: "8px", 
-                  borderRadius: "4px", 
-                  overflow: "hidden" 
-                }}>
-                  <div style={{ 
-                    background: "var(--accent)", 
-                    height: "100%", 
-                    width: `${((currentPlayerIndex + 1) / players.length) * 100}%`,
-                    transition: "width 0.3s ease"
-                  }} />
+                </div>
+                <div className="stepper-title">
+                  Turno de {player.name}
+                </div>
+                <div className="progress-bar-container">
+                  <div 
+                    className="progress-bar-fill"
+                    style={{ width: `${((currentPlayerIndex + 1) / players.length) * 100}%` }}
+                  />
                 </div>
               </div>
 
@@ -466,16 +458,14 @@ export default function WhatsAppMode({ onBack }) {
                   </button>
                 </div>
                 {r.revealedLocally && (
-                  <div className="local-reveal">
-                    <p>
-                      <strong>
-                        {r.isImposter ? "Eres el puto impostor cabrón/a" : "No eres el puto impostor cabrón/a"}
-                      </strong>
-                    </p>
-                    {(!r.isImposter || round.useImposterWord) && (
-                      <p>
-                        Palabra: <strong>{r.word}</strong>
-                      </p>
+                  <div className={`local-reveal ${r.isImposter ? 'imposter' : 'crew'}`}>
+                    <div className="role-text">
+                      {r.isImposter ? "🔥 Eres el puto impostor cabrón/a" : "✅ No eres el puto impostor cabrón/a"}
+                    </div>
+                    {(!r.isImposter || round.useImposterWord) && r.word && (
+                      <div className="word-text">
+                        {r.word}
+                      </div>
                     )}
                   </div>
                 )}

@@ -8,6 +8,7 @@ import {
   CATEGORIES_EN,
   randomPairFromCategory_EN,
 } from "../data/categories-en";
+import { CHARACTERS, getCharacterById, getRandomCharacter } from "../data/characters";
 
 const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -235,8 +236,9 @@ function HostView({ onBack, language }) {
           const playerName = data.name;
           const playerId = conn.peer;
           const reconnectId = data.reconnectId; // Old playerId they're trying to reclaim
+          const characterId = data.character; // Character selection
           
-          console.log(`[Host] Player ${playerId} identified as "${playerName}"`);
+          console.log(`[Host] Player ${playerId} identified as "${playerName}" with character: ${characterId}`);
           if (reconnectId) {
             console.log(`[Host] Player attempting to reconnect with ID: ${reconnectId}`);
           }
@@ -255,14 +257,14 @@ function HostView({ onBack, language }) {
             // Update connections
             setConnections((prev) => {
               const newConns = new Map(prev);
-              newConns.set(playerId, { conn, name: playerName });
+              newConns.set(playerId, { conn, name: playerName, character: characterId });
               return newConns;
             });
             
             // Update players list
             setPlayers((prev) => {
               const filtered = prev.filter(p => p.id !== reconnectId);
-              return [...filtered, { id: playerId, name: playerName }];
+              return [...filtered, { id: playerId, name: playerName, character: characterId }];
             });
             
             // Update roles list if in playing state
@@ -312,7 +314,7 @@ function HostView({ onBack, language }) {
           // Add to connections
           setConnections((prev) => {
             const newConns = new Map(prev);
-            newConns.set(playerId, { conn, name: playerName });
+            newConns.set(playerId, { conn, name: playerName, character: characterId });
             console.log(`[Host] Total connections: ${newConns.size}`);
             return newConns;
           });
@@ -323,7 +325,7 @@ function HostView({ onBack, language }) {
               console.log(`[Host] Player ${playerId} already in list, skipping`);
               return prev;
             }
-            const newPlayers = [...prev, { id: playerId, name: playerName }];
+            const newPlayers = [...prev, { id: playerId, name: playerName, character: characterId }];
             console.log(`[Host] Total players: ${newPlayers.length}`);
             return newPlayers;
           });
@@ -616,11 +618,23 @@ function HostView({ onBack, language }) {
             <span className="pill" style={{ background: "var(--accent)", color: "white" }}>
               👑 {hostName} (Tú)
             </span>
-            {players.map((player) => (
-              <span key={player.id} className="pill">
-                {player.name}
-              </span>
-            ))}
+            {players.map((player) => {
+              const character = player.character ? getCharacterById(player.character) : null;
+              return (
+                <span 
+                  key={player.id} 
+                  className="player-avatar"
+                  style={{
+                    borderColor: character?.colors.primary || "var(--accent)",
+                    background: character?.colors.gradient || "var(--card)",
+                    color: character ? "white" : "var(--text)",
+                  }}
+                >
+                  {character && <span className="emoji">{character.emoji}</span>}
+                  {player.name}
+                </span>
+              );
+            })}
           </div>
           {players.length === 0 && (
             <p className="muted center" style={{ marginTop: 8 }}>Esperando más jugadores...</p>
@@ -775,26 +789,42 @@ function HostView({ onBack, language }) {
             {gameRevealed && (
               <div style={{ marginTop: 16 }}>
                 <h4 className="section-title">Roles Revelados</h4>
-                <div style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                  <strong>👑 {hostRole.name} (Tú)</strong>
-                  {hostRole.isImposter ? (
-                    <span className="pill-danger" style={{ marginLeft: 8 }}>Impostor</span>
-                  ) : (
-                    <span className="pill" style={{ marginLeft: 8 }}>BANDA</span>
-                  )}
-                  <div className="muted" style={{ fontSize: "0.9rem", marginTop: 4 }}>
+                <div style={{ 
+                  padding: 12, 
+                  marginBottom: 8,
+                  borderRadius: "var(--radius-md)",
+                  background: hostRole.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                  border: `2px solid ${hostRole.isImposter ? "var(--danger)" : "var(--accent)"}`,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <strong>👑 {hostRole.name} (Tú)</strong>
+                    {hostRole.isImposter ? (
+                      <span className="pill-danger">Impostor</span>
+                    ) : (
+                      <span className="pill">BANDA</span>
+                    )}
+                  </div>
+                  <div className="muted" style={{ fontSize: "0.9rem" }}>
                     Palabra: {hostRole.word || "(sin pista)"}
                   </div>
                 </div>
                 {roles.map((role) => (
-                  <div key={role.playerId} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                    <strong>{role.name}</strong>
-                    {role.isImposter ? (
-                      <span className="pill-danger" style={{ marginLeft: 8 }}>Impostor</span>
-                    ) : (
-                      <span className="pill" style={{ marginLeft: 8 }}>BANDA</span>
-                    )}
-                    <div className="muted" style={{ fontSize: "0.9rem", marginTop: 4 }}>
+                  <div key={role.playerId} style={{ 
+                    padding: 12, 
+                    marginBottom: 8,
+                    borderRadius: "var(--radius-md)",
+                    background: role.isImposter ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                    border: `2px solid ${role.isImposter ? "var(--danger)" : "var(--accent)"}`,
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <strong>{role.name}</strong>
+                      {role.isImposter ? (
+                        <span className="pill-danger">Impostor</span>
+                      ) : (
+                        <span className="pill">BANDA</span>
+                      )}
+                    </div>
+                    <div className="muted" style={{ fontSize: "0.9rem" }}>
                       Palabra: {role.word || "(sin pista)"}
                     </div>
                   </div>
@@ -811,6 +841,7 @@ function HostView({ onBack, language }) {
 function PlayerView({ roomCode, onBack, language }) {
   const [connected, setConnected] = useState(false);
   const [playerName, setPlayerName] = useState("");
+  const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [nameSubmitted, setNameSubmitted] = useState(false);
   const [gameData, setGameData] = useState(null); // { isImposter, word, useImposterWord }
   const [revealed, setRevealed] = useState(false);
@@ -822,11 +853,15 @@ function PlayerView({ roomCode, onBack, language }) {
   useEffect(() => {
     const storedName = sessionStorage.getItem(`playerName_${roomCode}`);
     const storedId = sessionStorage.getItem(`playerId_${roomCode}`);
+    const storedChar = sessionStorage.getItem(`playerChar_${roomCode}`);
     
     if (storedName && storedId) {
       console.log(`[Player] Restoring session: ${storedName} (${storedId})`);
       setPlayerName(storedName);
       setPlayerId(storedId);
+      if (storedChar) {
+        setSelectedCharacter(getCharacterById(storedChar));
+      }
       setNameSubmitted(true);
     }
   }, [roomCode]);
@@ -880,12 +915,17 @@ function PlayerView({ roomCode, onBack, language }) {
           conn.send({ 
             type: "player-name", 
             name: playerName,
+            character: selectedCharacter?.id,
             reconnectId
           });
         } else {
           // Fresh connection
           console.log(`[Player] Fresh connection, sending name: ${playerName}`);
-          conn.send({ type: "player-name", name: playerName });
+          conn.send({ 
+            type: "player-name", 
+            name: playerName,
+            character: selectedCharacter?.id
+          });
         }
       });
       
@@ -901,6 +941,9 @@ function PlayerView({ roomCode, onBack, language }) {
             setPlayerId(data.playerId);
             sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
             sessionStorage.setItem(`playerName_${roomCode}`, playerName);
+            if (selectedCharacter) {
+              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+            }
             console.log(`[Player] Stored playerId: ${data.playerId}`);
           }
         }
@@ -913,6 +956,9 @@ function PlayerView({ roomCode, onBack, language }) {
             setPlayerId(data.playerId);
             sessionStorage.setItem(`playerId_${roomCode}`, data.playerId);
             sessionStorage.setItem(`playerName_${roomCode}`, playerName);
+            if (selectedCharacter) {
+              sessionStorage.setItem(`playerChar_${roomCode}`, selectedCharacter.id);
+            }
             console.log(`[Player] Stored playerId from role assignment: ${data.playerId}`);
           }
           
@@ -946,6 +992,7 @@ function PlayerView({ roomCode, onBack, language }) {
           setRevealedRoles(null);
           sessionStorage.removeItem(`playerId_${roomCode}`);
           sessionStorage.removeItem(`playerName_${roomCode}`);
+          sessionStorage.removeItem(`playerChar_${roomCode}`);
         }
       });
       
@@ -990,25 +1037,61 @@ function PlayerView({ roomCode, onBack, language }) {
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === "Enter" && playerName.trim()) {
+              if (e.key === "Enter" && playerName.trim() && selectedCharacter) {
                 setNameSubmitted(true);
               }
             }}
             autoFocus
             style={{ marginTop: 8 }}
           />
+          
+          <h2 className="section-title" style={{ marginTop: 24 }}>
+            {language === "es" ? "Elige tu personaje" : "Choose your character"}
+          </h2>
+          <div className="character-grid">
+            {CHARACTERS.map((char) => (
+              <div
+                key={char.id}
+                className={`character-card ${selectedCharacter?.id === char.id ? 'selected' : ''}`}
+                onClick={() => setSelectedCharacter(char)}
+                style={{
+                  borderColor: selectedCharacter?.id === char.id ? char.colors.primary : undefined,
+                  boxShadow: selectedCharacter?.id === char.id ? `0 0 20px ${char.colors.primary}` : undefined,
+                }}
+              >
+                <div 
+                  className="character-card-bg"
+                  style={{
+                    background: char.colors.gradient,
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: selectedCharacter?.id === char.id ? 0.15 : 0,
+                    transition: 'opacity 0.3s ease',
+                  }}
+                />
+                <div className="emoji">{char.emoji}</div>
+                <div className="name">{char.name}</div>
+              </div>
+            ))}
+          </div>
+          
           <button
             className="btn primary full"
             style={{ marginTop: 16 }}
             onClick={() => {
-              if (playerName.trim()) {
+              if (playerName.trim() && selectedCharacter) {
                 setNameSubmitted(true);
               }
             }}
-            disabled={!playerName.trim()}
+            disabled={!playerName.trim() || !selectedCharacter}
           >
             {t.connect}
           </button>
+          {!selectedCharacter && playerName.trim() && (
+            <p className="center muted" style={{ marginTop: 8, fontSize: '0.8rem' }}>
+              {language === "es" ? "Selecciona un personaje para continuar" : "Select a character to continue"}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -1062,13 +1145,26 @@ function PlayerView({ roomCode, onBack, language }) {
 
       <div className="card player-card-view" style={{ marginTop: 16 }}>
         <div className="player-role-display">
+          {selectedCharacter && (
+            <div style={{ textAlign: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: "4rem", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}>
+                {selectedCharacter.emoji}
+              </div>
+            </div>
+          )}
+          
           <h2 className="section-title center">{t.yourRole}</h2>
           <div className="role-reveal-box" style={{
             padding: 24,
             borderRadius: "var(--radius-lg)",
-            background: gameData.isImposter ? "var(--danger)" : "var(--accent)",
+            background: gameData.isImposter 
+              ? "linear-gradient(135deg, #ef4444, #dc2626)" 
+              : (selectedCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
             color: "white",
             textAlign: "center",
+            boxShadow: selectedCharacter 
+              ? `0 8px 32px ${gameData.isImposter ? '#ef4444' : selectedCharacter.colors.primary}` 
+              : undefined,
           }}>
             <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
               {gameData.isImposter
@@ -1086,10 +1182,16 @@ function PlayerView({ roomCode, onBack, language }) {
                 padding: 32,
                 borderRadius: "var(--radius-lg)",
                 background: "var(--card)",
-                border: "2px solid var(--accent)",
+                border: `3px solid ${selectedCharacter?.colors.primary || "var(--accent)"}`,
                 textAlign: "center",
+                boxShadow: selectedCharacter ? `0 4px 20px ${selectedCharacter.colors.primary}40` : undefined,
               }}>
-                <h1 style={{ fontSize: "2.5rem", color: "var(--accent)", margin: 0 }}>
+                <h1 style={{ 
+                  fontSize: "2.5rem", 
+                  color: selectedCharacter?.colors.primary || "var(--accent)", 
+                  margin: 0,
+                  textShadow: selectedCharacter ? `0 0 20px ${selectedCharacter.colors.primary}60` : undefined,
+                }}>
                   {gameData.word}
                 </h1>
               </div>
