@@ -543,8 +543,6 @@ function HostView({ onBack, language }) {
         }
       }
     });
-    
-    setUseImposterWord(true);
   };
 
   const resetForNewGame = () => {
