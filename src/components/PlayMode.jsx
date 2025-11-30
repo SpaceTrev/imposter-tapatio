@@ -641,34 +641,35 @@ export default function PlayMode({ onBack }) {
               </div>
             )}
 
-            {!currentRole.revealedLocally ? (
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ 
-                  background: "var(--card)", 
-                  border: "2px dashed var(--border)", 
-                  borderRadius: "var(--radius-lg)",
-                  padding: "48px 24px",
-                  marginBottom: 16
-                }}>
-                  <div style={{ fontSize: "4rem", marginBottom: 16 }}>🎭</div>
-                  <h3 style={{ marginTop: 0, marginBottom: 8 }}>Turno de {currentPlayer.name}</h3>
-                  <p className="muted" style={{ marginBottom: 0 }}>
-                    Asegúrate de que solo <strong>{currentPlayer.name}</strong> pueda ver la pantalla
-                  </p>
-                </div>
-                <button
-                  className="btn primary"
-                  onClick={() => toggleRevealLocal(currentPlayer.id)}
-                  style={{ fontSize: "1.1rem", padding: "16px 32px" }}
-                >
-                  👁️ Revelar mi rol
-                </button>
-                <p className="muted" style={{ fontSize: "0.85rem", marginTop: 12 }}>
-                  Solo presiona cuando nadie más esté viendo
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{ 
+                background: "var(--card)", 
+                border: "2px dashed var(--border)", 
+                borderRadius: "var(--radius-lg)",
+                padding: "48px 24px",
+                marginBottom: 16
+              }}>
+                <div style={{ fontSize: "4rem", marginBottom: 16 }}>🎭</div>
+                <h3 style={{ marginTop: 0, marginBottom: 8 }}>Turno de {currentPlayer.name}</h3>
+                <p className="muted" style={{ marginBottom: 0 }}>
+                  Asegúrate de que solo <strong>{currentPlayer.name}</strong> pueda ver la pantalla
                 </p>
               </div>
-            ) : (
-              <>
+              
+              {!currentRole.revealedLocally ? (
+                <>
+                  <button
+                    className="btn primary"
+                    onClick={() => toggleRevealLocal(currentPlayer.id)}
+                    style={{ fontSize: "1.1rem", padding: "16px 32px" }}
+                  >
+                    👁️ Revelar mi rol
+                  </button>
+                  <p className="muted" style={{ fontSize: "0.85rem", marginTop: 12 }}>
+                    Solo presiona cuando nadie más esté viendo
+                  </p>
+                </>
+              ) : (
                 <div className="player-role-display">
                   <h2 className="section-title center">Tu Rol</h2>
                   <div 
@@ -751,8 +752,8 @@ export default function PlayMode({ onBack }) {
                     </button>
                   )}
                 </div>
-              </>
-            )}
+              )}
+            </div>
 
             <div style={{ 
               display: "flex", 
@@ -782,39 +783,60 @@ export default function PlayMode({ onBack }) {
             {!round?.impostersRevealed && (
               <>
                 <div className="card" style={{ marginBottom: 16, textAlign: "center" }}>
-                  <h2 className="section-title center">Palabra Secreta</h2>
+                  <h2 className="section-title center">El juego ha comenzado</h2>
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    Todos ya tienen su palabra. Hablen, hagan preguntas y descubran quién está fingiendo.
+                  </p>
+                  
                   <div style={{
                     padding: 32,
                     borderRadius: "var(--radius-lg)",
-                    background: "var(--card)",
-                    border: "3px solid #8b5687",
-                    marginTop: 16,
+                    background: "linear-gradient(135deg, #10b981, #059669)",
+                    color: "white",
+                    marginTop: 24,
                   }}>
+                    <div style={{ fontSize: "3rem", marginBottom: 12 }}>🎯</div>
+                    <h3 style={{ margin: 0, marginBottom: 8 }}>Comienza:</h3>
                     <h1 style={{ 
-                      fontSize: "2.5rem", 
-                      color: "#8b5687", 
+                      fontSize: "2rem", 
                       margin: 0 
                     }}>
-                      {round.commonWord}
+                      {players.find(p => p.id === round.startingPlayerId)?.name || "Jugador aleatorio"}
                     </h1>
+                  </div>
+
+                  <div style={{ 
+                    marginTop: 24, 
+                    padding: 16, 
+                    background: "var(--bg)", 
+                    borderRadius: "var(--radius-md)" 
+                  }}>
+                    <p className="muted" style={{ fontSize: "0.9rem", margin: 0 }}>
+                      Categoría: <strong>{round.categoryName}</strong> · {" "}
+                      {players.length} jugadores · {round.numImposters}{" "}
+                      {round.numImposters === 1 ? "impostor" : "impostores"}
+                    </p>
                   </div>
                 </div>
 
                 <div className="card">
                   <h3 className="section-title">Controles de Revelación</h3>
+                  <p className="muted" style={{ fontSize: "0.9rem", marginBottom: 16 }}>
+                    Usa estos controles cuando terminen de discutir
+                  </p>
                   <button 
                     className="btn primary full" 
                     style={{ marginBottom: 8 }} 
                     onClick={toggleImpostersRevealed}
                   >
-                    Revelar Impostores
+                    🎭 Revelar Impostores y Palabras
                   </button>
                   {!round.imposterWordRevealed && (
                     <button 
                       className="btn ghost full" 
                       onClick={showImposterWord}
                     >
-                      Mostrar Palabra al Impostor
+                      👁️ Mostrar Palabra al Impostor (antes de revelar)
                     </button>
                   )}
                 </div>
@@ -838,6 +860,23 @@ export default function PlayMode({ onBack }) {
                 <p className="center muted" style={{ marginBottom: 24 }}>
                   El juego ha terminado
                 </p>
+
+                <div style={{ 
+                  padding: 24, 
+                  borderRadius: "var(--radius-lg)", 
+                  background: "var(--bg)",
+                  marginBottom: 24,
+                  textAlign: "center"
+                }}>
+                  <h3 style={{ marginTop: 0, marginBottom: 12 }}>Palabra Secreta</h3>
+                  <h1 style={{ 
+                    fontSize: "2.5rem", 
+                    color: "#8b5687", 
+                    margin: 0 
+                  }}>
+                    {round.commonWord}
+                  </h1>
+                </div>
 
                 <h3 className="section-title" style={{ 
                   textTransform: "uppercase",
