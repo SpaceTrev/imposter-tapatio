@@ -620,9 +620,9 @@ export default function PlayMode({ onBack }) {
 
         {step === "round" && currentPlayer && currentRole && (
           <section className="card">
-            <div style={{ marginBottom: 16 }}>
-              <div className="muted center">Jugador {currentPlayerIndex + 1} de {players.length}</div>
-              <h2 className="center" style={{ margin: "8px 0", fontSize: "1.5rem" }}>
+            <div style={{ marginBottom: 12 }}>
+              <div className="muted center" style={{ fontSize: "0.85rem" }}>Jugador {currentPlayerIndex + 1} de {players.length}</div>
+              <h2 className="center" style={{ margin: "4px 0", fontSize: "1.25rem" }}>
                 {currentPlayer.name}
               </h2>
               <div className="progress-bar">
@@ -634,143 +634,142 @@ export default function PlayMode({ onBack }) {
             </div>
 
             {currentCharacter && (
-              <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: "5rem", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}>
+              <div style={{ textAlign: "center", marginBottom: 12 }}>
+                <div style={{ fontSize: "3rem", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }}>
                   {currentCharacter.emoji}
                 </div>
               </div>
             )}
 
-            <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ 
-                background: "var(--card)", 
-                border: "2px dashed var(--border)", 
-                borderRadius: "var(--radius-lg)",
-                padding: "48px 24px",
-                marginBottom: 16
-              }}>
-                <div style={{ fontSize: "4rem", marginBottom: 16 }}>🎭</div>
-                <h3 style={{ marginTop: 0, marginBottom: 8 }}>Turno de {currentPlayer.name}</h3>
-                <p className="muted" style={{ marginBottom: 0 }}>
-                  Asegúrate de que solo <strong>{currentPlayer.name}</strong> pueda ver la pantalla
+            {!currentRole.revealedLocally ? (
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div style={{ 
+                  background: "var(--card)", 
+                  border: "2px dashed var(--border)", 
+                  borderRadius: "var(--radius-lg)",
+                  padding: "24px 16px",
+                  marginBottom: 12
+                }}>
+                  <div style={{ fontSize: "3rem", marginBottom: 8 }}>🎭</div>
+                  <h3 style={{ marginTop: 0, marginBottom: 6, fontSize: "1.1rem" }}>Turno de {currentPlayer.name}</h3>
+                  <p className="muted" style={{ marginBottom: 0, fontSize: "0.85rem" }}>
+                    Solo <strong>{currentPlayer.name}</strong> puede ver la pantalla
+                  </p>
+                </div>
+                
+                <button
+                  className="btn primary"
+                  onClick={() => toggleRevealLocal(currentPlayer.id)}
+                  style={{ fontSize: "1rem", padding: "12px 24px" }}
+                >
+                  👁️ Revelar mi rol
+                </button>
+                <p className="muted" style={{ fontSize: "0.8rem", marginTop: 8 }}>
+                  Solo presiona cuando nadie más esté viendo
                 </p>
               </div>
-              
-              {!currentRole.revealedLocally ? (
-                <>
-                  <button
-                    className="btn primary"
-                    onClick={() => toggleRevealLocal(currentPlayer.id)}
-                    style={{ fontSize: "1.1rem", padding: "16px 32px" }}
-                  >
-                    👁️ Revelar mi rol
-                  </button>
-                  <p className="muted" style={{ fontSize: "0.85rem", marginTop: 12 }}>
-                    Solo presiona cuando nadie más esté viendo
-                  </p>
-                </>
-              ) : (
-                <div className="player-role-display">
-                  <h2 className="section-title center">Tu Rol</h2>
-                  <div 
-                    className="role-reveal-box" 
-                    style={{
+            ) : (
+              <div style={{ textAlign: "center", marginBottom: 16 }}>
+                <div 
+                  className="role-reveal-box" 
+                  style={{
+                    padding: 16,
+                    borderRadius: "var(--radius-lg)",
+                    background: currentRole.isImposter 
+                      ? "linear-gradient(135deg, #a855f7, #c084fc)" 
+                      : (currentCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
+                    color: "white",
+                    textAlign: "center",
+                    marginBottom: 12,
+                    boxShadow: currentCharacter 
+                      ? `0 8px 32px ${currentRole.isImposter ? '#a855f7' : currentCharacter.colors.primary}40` 
+                      : undefined,
+                  }}
+                >
+                  <h1 style={{ fontSize: "1.15rem", marginBottom: 0 }}>
+                    {currentRole.isImposter
+                      ? "🔥 Eres el puto impostor cabrón/a"
+                      : "✅ No eres el puto impostor cabrón/a"}
+                  </h1>
+                </div>
+
+                {currentRole.word && (
+                  <>
+                    <h2 className="section-title center" style={{ marginBottom: 8, fontSize: "0.9rem" }}>
+                      Palabra Secreta
+                    </h2>
+                    <div style={{
                       padding: 24,
                       borderRadius: "var(--radius-lg)",
-                      background: currentRole.isImposter 
-                        ? "linear-gradient(135deg, #a855f7, #c084fc)" 
-                        : (currentCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
-                      color: "white",
+                      background: "var(--card)",
+                      border: `3px solid ${currentCharacter?.colors.primary || "var(--accent)"}`,
                       textAlign: "center",
-                      marginBottom: 24,
-                      boxShadow: currentCharacter 
-                        ? `0 8px 32px ${currentRole.isImposter ? '#a855f7' : currentCharacter.colors.primary}40` 
-                        : undefined,
-                    }}
-                  >
-                    <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
-                      {currentRole.isImposter
-                        ? "🔥 Eres el puto impostor cabrón/a"
-                        : "✅ No eres el puto impostor cabrón/a"}
-                    </h1>
-                  </div>
-
-                  {currentRole.word && (
-                    <>
-                      <h2 className="section-title center" style={{ marginBottom: 16 }}>
-                        Palabra Secreta
-                      </h2>
-                      <div style={{
-                        padding: 32,
-                        borderRadius: "var(--radius-lg)",
-                        background: "var(--card)",
-                        border: `3px solid ${currentCharacter?.colors.primary || "var(--accent)"}`,
-                        textAlign: "center",
-                        marginBottom: 24,
-                        boxShadow: currentCharacter ? `0 4px 20px ${currentCharacter.colors.primary}40` : undefined,
-                      }}>
-                        <h1 style={{ 
-                          fontSize: "2.5rem", 
-                          color: currentCharacter?.colors.primary || "var(--accent)", 
-                          margin: 0,
-                          textShadow: currentCharacter ? `0 0 20px ${currentCharacter.colors.primary}60` : undefined,
-                        }}>
-                          {currentRole.word}
-                        </h1>
-                      </div>
-                    </>
-                  )}
-
-                  {!currentRole.word && currentRole.isImposter && (
-                    <div style={{ 
-                      padding: 16, 
-                      background: "var(--bg)", 
-                      borderRadius: "var(--radius-md)",
-                      marginBottom: 24 
+                      marginBottom: 12,
+                      boxShadow: currentCharacter ? `0 4px 20px ${currentCharacter.colors.primary}40` : undefined,
                     }}>
-                      <p className="center muted">
-                        Sin pista - esperando revelación de palabra
-                      </p>
+                      <h1 style={{ 
+                        fontSize: "2rem", 
+                        color: currentCharacter?.colors.primary || "var(--accent)", 
+                        margin: 0,
+                        textShadow: currentCharacter ? `0 0 20px ${currentCharacter.colors.primary}60` : undefined,
+                      }}>
+                        {currentRole.word}
+                      </h1>
                     </div>
-                  )}
+                  </>
+                )}
 
+                {!currentRole.word && currentRole.isImposter && (
+                  <div style={{ 
+                    padding: 12, 
+                    background: "var(--bg)", 
+                    borderRadius: "var(--radius-md)",
+                    marginBottom: 12 
+                  }}>
+                    <p className="center muted" style={{ fontSize: "0.85rem", margin: 0 }}>
+                      Sin pista - esperando revelación de palabra
+                    </p>
+                  </div>
+                )}
+
+                <button
+                  className="btn ghost"
+                  onClick={() => toggleRevealLocal(currentPlayer.id)}
+                  style={{ width: "100%", marginBottom: 8, padding: "10px" }}
+                >
+                  🙈 Ocultar
+                </button>
+
+                {currentPlayer.phone && (
                   <button
-                    className="btn ghost"
-                    onClick={() => toggleRevealLocal(currentPlayer.id)}
-                    style={{ width: "100%", marginBottom: 16 }}
+                    className="btn full"
+                    style={{ marginBottom: 0, padding: "10px" }}
+                    onClick={() => sendRoleWhatsApp(currentPlayer.id)}
                   >
-                    🙈 Ocultar rol
+                    📱 WhatsApp
                   </button>
-
-                  {currentPlayer.phone && (
-                    <button
-                      className="btn full"
-                      style={{ marginBottom: 8 }}
-                      onClick={() => sendRoleWhatsApp(currentPlayer.id)}
-                    >
-                      📱 Recordatorio por WhatsApp
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             <div style={{ 
               display: "flex", 
               justifyContent: "space-between", 
-              marginTop: 24,
+              marginTop: 16,
               gap: 8 
             }}>
               <button
                 className="btn ghost"
                 onClick={goToPreviousPlayer}
                 disabled={currentPlayerIndex === 0}
+                style={{ padding: "10px 16px" }}
               >
                 ← Anterior
               </button>
               <button
                 className="btn primary"
                 onClick={goToNextPlayer}
+                style={{ padding: "10px 16px" }}
               >
                 {currentPlayerIndex === players.length - 1 ? "Finalizar" : "Siguiente →"}
               </button>
@@ -846,31 +845,28 @@ export default function PlayMode({ onBack }) {
             {round?.impostersRevealed && (
               <div className="card" style={{ 
                 border: "3px solid #ef4444",
-                padding: 24 
+                padding: 16 
               }}>
                 <h2 style={{ 
                   textAlign: "center", 
                   color: "#ef4444", 
-                  fontSize: "2rem",
+                  fontSize: "1.5rem",
                   marginTop: 0,
                   marginBottom: 8 
                 }}>
                   ¡Impostores Revelados!
                 </h2>
-                <p className="center muted" style={{ marginBottom: 24 }}>
-                  El juego ha terminado
-                </p>
 
                 <div style={{ 
-                  padding: 24, 
+                  padding: 16, 
                   borderRadius: "var(--radius-lg)", 
                   background: "var(--bg)",
-                  marginBottom: 24,
+                  marginBottom: 12,
                   textAlign: "center"
                 }}>
-                  <h3 style={{ marginTop: 0, marginBottom: 12 }}>Palabra Secreta</h3>
+                  <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: "0.9rem" }}>Palabra Secreta</h3>
                   <h1 style={{ 
-                    fontSize: "2.5rem", 
+                    fontSize: "2rem", 
                     color: "#8b5687", 
                     margin: 0 
                   }}>
@@ -880,71 +876,75 @@ export default function PlayMode({ onBack }) {
 
                 <h3 className="section-title" style={{ 
                   textTransform: "uppercase",
-                  fontSize: "1rem",
+                  fontSize: "0.85rem",
                   letterSpacing: "0.05em",
-                  marginBottom: 16 
+                  marginBottom: 12 
                 }}>
                   Resultados
                 </h3>
 
-                {round.roles.map((role) => {
-                  const player = players.find((p) => p.id === role.playerId);
-                  const character = player?.character ? getCharacterById(player.character) : null;
-                  
-                  return (
-                    <div 
-                      key={role.playerId} 
-                      style={{ 
-                        padding: 20,
-                        marginBottom: 12,
-                        borderRadius: "var(--radius-lg)",
-                        background: role.isImposter ? "#ef4444" : "#8b5687",
-                        color: "white",
-                      }}
-                    >
-                      <div style={{ 
-                        display: "flex", 
-                        justifyContent: "space-between", 
-                        alignItems: "center",
-                        marginBottom: 12 
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {character && <span style={{ fontSize: "1.5rem" }}>{character.emoji}</span>}
-                          <strong style={{ fontSize: "1.1rem" }}>{player?.name}</strong>
+                <div style={{ maxHeight: "40vh", overflowY: "auto", marginBottom: 12 }}>
+                  {round.roles.map((role) => {
+                    const player = players.find((p) => p.id === role.playerId);
+                    const character = player?.character ? getCharacterById(player.character) : null;
+                    
+                    return (
+                      <div 
+                        key={role.playerId} 
+                        style={{ 
+                          padding: 12,
+                          marginBottom: 8,
+                          borderRadius: "var(--radius-md)",
+                          background: role.isImposter ? "#ef4444" : "#8b5687",
+                          color: "white",
+                        }}
+                      >
+                        <div style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between", 
+                          alignItems: "center",
+                          marginBottom: 6 
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            {character && <span style={{ fontSize: "1.2rem" }}>{character.emoji}</span>}
+                            <strong style={{ fontSize: "0.95rem" }}>{player?.name}</strong>
+                          </div>
+                          <span 
+                            className={role.isImposter ? "pill-danger" : "pill"} 
+                            style={{ 
+                              background: role.isImposter ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.3)",
+                              color: "white",
+                              fontWeight: "bold",
+                              borderRadius: "999px",
+                              padding: "4px 10px",
+                              fontSize: "0.8rem"
+                            }}
+                          >
+                            {role.isImposter ? "🔥 Impostor" : "✅ BANDA"}
+                          </span>
                         </div>
-                        <span 
-                          className={role.isImposter ? "pill-danger" : "pill"} 
-                          style={{ 
-                            background: role.isImposter ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.3)",
-                            color: "white",
-                            fontWeight: "bold",
-                            borderRadius: "999px",
-                            padding: "6px 14px"
-                          }}
-                        >
-                          {role.isImposter ? "🔥 Impostor" : "✅ BANDA"}
-                        </span>
+                        <div style={{ fontSize: "0.85rem", opacity: 0.9 }}>
+                          {role.isImposter ? (role.word || round.commonWord) : (role.word || "(sin pista)")}
+                        </div>
                       </div>
-                      <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
-                        Palabra: {role.isImposter ? (role.word || round.commonWord) : (role.word || "(sin pista)")}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
 
-                <div style={{ marginTop: 24 }}>
+                <div style={{ marginTop: 0 }}>
                   <button
                     className="btn primary full"
                     onClick={newRoundSameSetup}
-                    style={{ marginBottom: 8 }}
+                    style={{ marginBottom: 8, padding: "10px" }}
                   >
                     🎮 Nueva Ronda
                   </button>
                   <button
                     className="btn ghost full"
                     onClick={resetToSetup}
+                    style={{ padding: "10px" }}
                   >
-                    Volver a Configuración
+                    Configuración
                   </button>
                 </div>
               </div>
