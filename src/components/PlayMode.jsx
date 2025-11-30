@@ -120,6 +120,36 @@ export default function PlayMode({ onBack }) {
   const [round, setRound] = useState(null);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
 
+  // Derived values needed in effects
+  const currentPlayer = players[currentPlayerIndex];
+  const currentRole = round?.roles.find((r) => r.playerId === currentPlayer?.id);
+  const currentCharacter = currentPlayer?.character ? getCharacterById(currentPlayer.character) : null;
+
+  const maxImposters = useMemo(
+    () => Math.max(1, players.length ? players.length - 1 : 1),
+    [players.length]
+  );
+
+  function restoreSession() {
+    const session = loadSession(salaCode);
+    if (session) {
+      setStep(session.step);
+      setRound(session.round);
+      setCurrentPlayerIndex(session.currentPlayerIndex);
+      setNumImposters(session.numImposters);
+      setAllowAdult(session.allowAdult);
+      setAllowCustom(session.allowCustom);
+      setSendHintToImposter(session.sendHintToImposter);
+      setUseImposterWord(session.useImposterWord);
+      setCategoryId(session.categoryId);
+      setHint(session.hint);
+      if (session.players) {
+        setPlayers(session.players);
+      }
+      setShowSessionBanner(false);
+    }
+  }
+
   // Save session whenever game state changes
   useEffect(() => {
     if (step !== 'setup' && round) {
@@ -168,31 +198,6 @@ export default function PlayMode({ onBack }) {
       }
     }
   }, [salaCode, step, round, currentPlayer, currentRole, players]);
-
-  const maxImposters = useMemo(
-    () => Math.max(1, players.length ? players.length - 1 : 1),
-    [players.length]
-  );
-
-  function restoreSession() {
-    const session = loadSession(salaCode);
-    if (session) {
-      setStep(session.step);
-      setRound(session.round);
-      setCurrentPlayerIndex(session.currentPlayerIndex);
-      setNumImposters(session.numImposters);
-      setAllowAdult(session.allowAdult);
-      setAllowCustom(session.allowCustom);
-      setSendHintToImposter(session.sendHintToImposter);
-      setUseImposterWord(session.useImposterWord);
-      setCategoryId(session.categoryId);
-      setHint(session.hint);
-      if (session.players) {
-        setPlayers(session.players);
-      }
-      setShowSessionBanner(false);
-    }
-  }
 
   function dismissSessionBanner() {
     clearSession();
@@ -361,10 +366,6 @@ export default function PlayMode({ onBack }) {
 
     openWhatsApp(player.phone, msg);
   }
-
-  const currentPlayer = players[currentPlayerIndex];
-  const currentRole = round?.roles.find((r) => r.playerId === currentPlayer?.id);
-  const currentCharacter = currentPlayer?.character ? getCharacterById(currentPlayer.character) : null;
 
   return (
     <div className="app">

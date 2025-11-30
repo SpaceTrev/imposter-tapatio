@@ -200,6 +200,19 @@ export function getRandomCategory_EN({ allowAdult }) {
   return filtered[Math.floor(Math.random() * filtered.length)];
 }
 
+export function getAllowedPairs_EN({ allowAdult, allowCustom }) {
+  const allowedTypes = allowAdult ? ["family", "adult", "mixed"] : ["family", "mixed"];
+  const allPairs = [];
+  
+  for (const cat of CATEGORIES_EN) {
+    if (cat.customBlank && !allowCustom) continue;
+    if (!allowedTypes.includes(cat.type)) continue;
+    allPairs.push(...cat.pairs);
+  }
+  
+  return allPairs;
+}
+
 export function randomPairFromCategory_EN(cat) {
   const idx = Math.floor(Math.random() * cat.pairs.length);
   return cat.pairs[idx];

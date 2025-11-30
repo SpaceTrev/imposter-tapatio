@@ -85,6 +85,16 @@ export default function ScreenMode({ onBack }) {
   
   const [players, setPlayers] = useState(loadPlayers);
   const [nameInput, setNameInput] = useState("");
+  const [numImposters, setNumImposters] = useState(1);
+  const [allowAdult, setAllowAdult] = useState(false);
+  const [allowCustom, setAllowCustom] = useState(false);
+  const [sendHintToImposter, setSendHintToImposter] = useState(false);
+  const [useImposterWord, setUseImposterWord] = useState(false);
+  const [categoryId, setCategoryId] = useState("random");
+  const [hint, setHint] = useState("");
+  const [step, setStep] = useState("setup");
+  const [round, setRound] = useState(null);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
 
   useEffect(() => {
     savePlayers(players);
@@ -106,18 +116,6 @@ export default function ScreenMode({ onBack }) {
       setHint(session.hint);
     }
   }, [salaCode]);
-
-  const [numImposters, setNumImposters] = useState(1);
-  const [allowAdult, setAllowAdult] = useState(false);
-  const [allowCustom, setAllowCustom] = useState(false);
-  const [sendHintToImposter, setSendHintToImposter] = useState(false);
-  const [useImposterWord, setUseImposterWord] = useState(false);
-  const [categoryId, setCategoryId] = useState("random");
-  const [hint, setHint] = useState("");
-
-  const [step, setStep] = useState("setup");
-  const [round, setRound] = useState(null);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
 
   // Save session whenever game state changes
   useEffect(() => {
@@ -472,9 +470,11 @@ export default function ScreenMode({ onBack }) {
         )}
 
         {step === "round" && round && (() => {
-          const r = round.roles[currentPlayerIndex];
-          const player = players.find((p) => p.id === r.playerId);
+          const player = players[currentPlayerIndex];
           if (!player) return null;
+          
+          const r = round.roles.find((role) => role.playerId === player.id);
+          if (!r) return null;
 
           const isLastPlayer = currentPlayerIndex === players.length - 1;
 

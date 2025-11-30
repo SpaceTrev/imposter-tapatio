@@ -3,12 +3,14 @@ import { Peer } from "peerjs";
 import {
   CATEGORIES,
   randomPairFromCategory,
+  getAllowedPairs,
 } from "../data/categories";
 import {
   CATEGORIES_EN,
   randomPairFromCategory_EN,
+  getAllowedPairs_EN,
 } from "../data/categories-en";
-import { CHARACTERS, getCharacterById, getRandomCharacter } from "../data/characters";
+import { CHARACTERS, getCharacterById } from "../data/characters";
 
 const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
@@ -405,6 +407,7 @@ function HostView({ onBack, language }) {
     // Select category based on language
     const categoriesPool = language === "es" ? CATEGORIES : CATEGORIES_EN;
     const randomPairFn = language === "es" ? randomPairFromCategory : randomPairFromCategory_EN;
+    const getAllowedPairsFn = language === "es" ? getAllowedPairs : getAllowedPairs_EN;
     
     const allowedCategories = categoriesPool.filter(c => {
       if (excludeAdult && c.type === "adult") return false;
@@ -412,22 +415,37 @@ function HostView({ onBack, language }) {
     });
     
     let category;
-    if (categoryId) {
-      category = categoriesPool.find(c => c.id === categoryId);
+    let pair;
+    
+    if (categoryId === "mixed") {
+      // Mixed mode: get all pairs from all allowed categories
+      const allPairs = getAllowedPairsFn({ allowAdult: !excludeAdult, allowCustom: false });
+      if (allPairs.length === 0) {
+        alert(language === "es" ? "No hay pares disponibles con los filtros actuales." : "No pairs available with current filters.");
+        return;
+      }
+      pair = allPairs[Math.floor(Math.random() * allPairs.length)];
+      setCurrentCategoryId("mixed");
     } else {
-      category = allowedCategories[Math.floor(Math.random() * allowedCategories.length)];
+      if (categoryId) {
+        category = categoriesPool.find(c => c.id === categoryId);
+      } else {
+        category = allowedCategories[Math.floor(Math.random() * allowedCategories.length)];
+      }
+      
+      if (!category) {
+        alert(language === "es" ? "Categoría inválida" : "Invalid category");
+        return;
+      }
+
+      // Store category ID for later use (e.g., showImposterWord)
+      setCurrentCategoryId(category.id);
+
+      // Get word pair
+      pair = randomPairFn(category);
     }
     
-    if (!category) {
-      alert(language === "es" ? "Categoría inválida" : "Invalid category");
-      return;
-    }
-
-    // Store category ID for later use (e.g., showImposterWord)
-    setCurrentCategoryId(category.id);
-
-    // Get word pair
-    const { common, imposter } = randomPairFn(category);
+    const { common, imposter } = pair;
     
     // Store common word for later reveal to imposters (they need to see the secret word)
     setStoredImposterWord(common);
@@ -714,6 +732,7 @@ function HostView({ onBack, language }) {
                 {language === "es" ? "Categoría" : "Category"}
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                   <option value="">{language === "es" ? "🎲 Aleatoria" : "🎲 Random"}</option>
+                  <option value="mixed">{language === "es" ? "🔀 Mezcladas (todas)" : "🔀 Mixed (all)"}</option>
                   {(language === "es" ? CATEGORIES : CATEGORIES_EN).filter(c => {
                     if (excludeAdult && c.type === "adult") return false;
                     return true;
