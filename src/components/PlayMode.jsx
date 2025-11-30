@@ -304,6 +304,18 @@ export default function PlayMode({ onBack }) {
     }));
   }
 
+  function toggleRevealLocal(playerId) {
+    if (!round) return;
+    setRound((prev) => ({
+      ...prev,
+      roles: prev.roles.map((r) =>
+        r.playerId === playerId
+          ? { ...r, revealedLocally: !r.revealedLocally }
+          : r
+      ),
+    }));
+  }
+
   function showImposterWord() {
     if (!round || round.imposterWordRevealed) return;
     
@@ -333,6 +345,15 @@ export default function PlayMode({ onBack }) {
   }
 
   function goToNextPlayer() {
+    // Auto-hide current player's role before moving to next
+    if (round && players[currentPlayerIndex]) {
+      const currentPlayerId = players[currentPlayerIndex].id;
+      const currentRole = round.roles.find(r => r.playerId === currentPlayerId);
+      if (currentRole?.revealedLocally) {
+        toggleRevealLocal(currentPlayerId);
+      }
+    }
+    
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex(prev => prev + 1);
     } else {
@@ -341,6 +362,15 @@ export default function PlayMode({ onBack }) {
   }
 
   function goToPreviousPlayer() {
+    // Auto-hide current player's role before moving to previous
+    if (round && players[currentPlayerIndex]) {
+      const currentPlayerId = players[currentPlayerIndex].id;
+      const currentRole = round.roles.find(r => r.playerId === currentPlayerId);
+      if (currentRole?.revealedLocally) {
+        toggleRevealLocal(currentPlayerId);
+      }
+    }
+    
     if (currentPlayerIndex > 0) {
       setCurrentPlayerIndex(prev => prev - 1);
     }
@@ -611,80 +641,118 @@ export default function PlayMode({ onBack }) {
               </div>
             )}
 
-            <div className="player-role-display">
-              <h2 className="section-title center">Tu Rol</h2>
-              <div 
-                className="role-reveal-box" 
-                style={{
-                  padding: 24,
-                  borderRadius: "var(--radius-lg)",
-                  background: currentRole.isImposter 
-                    ? "linear-gradient(135deg, #a855f7, #c084fc)" 
-                    : (currentCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
-                  color: "white",
-                  textAlign: "center",
-                  marginBottom: 24,
-                  boxShadow: currentCharacter 
-                    ? `0 8px 32px ${currentRole.isImposter ? '#a855f7' : currentCharacter.colors.primary}40` 
-                    : undefined,
-                }}
-              >
-                <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
-                  {currentRole.isImposter
-                    ? "🔥 Eres el puto impostor cabrón/a"
-                    : "✅ No eres el puto impostor cabrón/a"}
-                </h1>
-              </div>
-
-              {currentRole.word && (
-                <>
-                  <h2 className="section-title center" style={{ marginBottom: 16 }}>
-                    Palabra Secreta
-                  </h2>
-                  <div style={{
-                    padding: 32,
-                    borderRadius: "var(--radius-lg)",
-                    background: "var(--card)",
-                    border: `3px solid ${currentCharacter?.colors.primary || "var(--accent)"}`,
-                    textAlign: "center",
-                    marginBottom: 24,
-                    boxShadow: currentCharacter ? `0 4px 20px ${currentCharacter.colors.primary}40` : undefined,
-                  }}>
-                    <h1 style={{ 
-                      fontSize: "2.5rem", 
-                      color: currentCharacter?.colors.primary || "var(--accent)", 
-                      margin: 0,
-                      textShadow: currentCharacter ? `0 0 20px ${currentCharacter.colors.primary}60` : undefined,
-                    }}>
-                      {currentRole.word}
-                    </h1>
-                  </div>
-                </>
-              )}
-
-              {!currentRole.word && currentRole.isImposter && (
+            {!currentRole.revealedLocally ? (
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ 
-                  padding: 16, 
-                  background: "var(--bg)", 
-                  borderRadius: "var(--radius-md)",
-                  marginBottom: 24 
+                  background: "var(--card)", 
+                  border: "2px dashed var(--border)", 
+                  borderRadius: "var(--radius-lg)",
+                  padding: "48px 24px",
+                  marginBottom: 16
                 }}>
-                  <p className="center muted">
-                    Sin pista - esperando revelación de palabra
+                  <div style={{ fontSize: "4rem", marginBottom: 16 }}>🎭</div>
+                  <h3 style={{ marginTop: 0, marginBottom: 8 }}>Turno de {currentPlayer.name}</h3>
+                  <p className="muted" style={{ marginBottom: 0 }}>
+                    Asegúrate de que solo <strong>{currentPlayer.name}</strong> pueda ver la pantalla
                   </p>
                 </div>
-              )}
-
-              {currentPlayer.phone && (
                 <button
-                  className="btn full"
-                  style={{ marginBottom: 8 }}
-                  onClick={() => sendRoleWhatsApp(currentPlayer.id)}
+                  className="btn primary"
+                  onClick={() => toggleRevealLocal(currentPlayer.id)}
+                  style={{ fontSize: "1.1rem", padding: "16px 32px" }}
                 >
-                  📱 Recordatorio por WhatsApp
+                  👁️ Revelar mi rol
                 </button>
-              )}
-            </div>
+                <p className="muted" style={{ fontSize: "0.85rem", marginTop: 12 }}>
+                  Solo presiona cuando nadie más esté viendo
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="player-role-display">
+                  <h2 className="section-title center">Tu Rol</h2>
+                  <div 
+                    className="role-reveal-box" 
+                    style={{
+                      padding: 24,
+                      borderRadius: "var(--radius-lg)",
+                      background: currentRole.isImposter 
+                        ? "linear-gradient(135deg, #a855f7, #c084fc)" 
+                        : (currentCharacter?.colors.gradient || "linear-gradient(135deg, #10b981, #059669)"),
+                      color: "white",
+                      textAlign: "center",
+                      marginBottom: 24,
+                      boxShadow: currentCharacter 
+                        ? `0 8px 32px ${currentRole.isImposter ? '#a855f7' : currentCharacter.colors.primary}40` 
+                        : undefined,
+                    }}
+                  >
+                    <h1 style={{ fontSize: "1.5rem", marginBottom: 0 }}>
+                      {currentRole.isImposter
+                        ? "🔥 Eres el puto impostor cabrón/a"
+                        : "✅ No eres el puto impostor cabrón/a"}
+                    </h1>
+                  </div>
+
+                  {currentRole.word && (
+                    <>
+                      <h2 className="section-title center" style={{ marginBottom: 16 }}>
+                        Palabra Secreta
+                      </h2>
+                      <div style={{
+                        padding: 32,
+                        borderRadius: "var(--radius-lg)",
+                        background: "var(--card)",
+                        border: `3px solid ${currentCharacter?.colors.primary || "var(--accent)"}`,
+                        textAlign: "center",
+                        marginBottom: 24,
+                        boxShadow: currentCharacter ? `0 4px 20px ${currentCharacter.colors.primary}40` : undefined,
+                      }}>
+                        <h1 style={{ 
+                          fontSize: "2.5rem", 
+                          color: currentCharacter?.colors.primary || "var(--accent)", 
+                          margin: 0,
+                          textShadow: currentCharacter ? `0 0 20px ${currentCharacter.colors.primary}60` : undefined,
+                        }}>
+                          {currentRole.word}
+                        </h1>
+                      </div>
+                    </>
+                  )}
+
+                  {!currentRole.word && currentRole.isImposter && (
+                    <div style={{ 
+                      padding: 16, 
+                      background: "var(--bg)", 
+                      borderRadius: "var(--radius-md)",
+                      marginBottom: 24 
+                    }}>
+                      <p className="center muted">
+                        Sin pista - esperando revelación de palabra
+                      </p>
+                    </div>
+                  )}
+
+                  <button
+                    className="btn ghost"
+                    onClick={() => toggleRevealLocal(currentPlayer.id)}
+                    style={{ width: "100%", marginBottom: 16 }}
+                  >
+                    🙈 Ocultar rol
+                  </button>
+
+                  {currentPlayer.phone && (
+                    <button
+                      className="btn full"
+                      style={{ marginBottom: 8 }}
+                      onClick={() => sendRoleWhatsApp(currentPlayer.id)}
+                    >
+                      📱 Recordatorio por WhatsApp
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             <div style={{ 
               display: "flex", 

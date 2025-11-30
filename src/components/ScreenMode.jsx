@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   CATEGORIES,
   getCategoryById,
@@ -7,22 +6,11 @@ import {
   randomPairFromCategory,
   getAllowedPairs,
 } from "../data/categories";
-// TODO: Add English support like WiFiMode
-// import { CATEGORIES_EN, getCategoryById_EN, getRandomCategory_EN, randomPairFromCategory_EN } from "../data/categories-en";
 
 const randomId = () => Math.random().toString(36).slice(2);
-const randomRoomCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 const STORAGE_KEY = "imposter_players";
-
-// Session storage helpers with sala support
-function getSessionKey(salaCode) {
-  return salaCode ? `imposter_screen_sala_${salaCode}_session` : "imposter_screen_session";
-}
-
-function getPlayerTokenKey(salaCode) {
-  return salaCode ? `imposter_screen_player_token_${salaCode}` : null;
-}
+const SESSION_KEY = "imposter_screen_session";
 
 function loadPlayers() {
   try {
@@ -41,29 +29,26 @@ function savePlayers(players) {
   }
 }
 
-function loadSession(salaCode = null) {
+function loadSession() {
   try {
-    const sessionKey = getSessionKey(salaCode);
-    const saved = sessionStorage.getItem(sessionKey);
+    const saved = sessionStorage.getItem(SESSION_KEY);
     return saved ? JSON.parse(saved) : null;
   } catch {
     return null;
   }
 }
 
-function saveSession(data, salaCode = null) {
+function saveSession(data) {
   try {
-    const sessionKey = getSessionKey(salaCode);
-    sessionStorage.setItem(sessionKey, JSON.stringify(data));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(data));
   } catch (err) {
     console.warn("No se pudo guardar la sesión:", err);
   }
 }
 
-function clearSession(salaCode = null) {
+function clearSession() {
   try {
-    const sessionKey = getSessionKey(salaCode);
-    sessionStorage.removeItem(sessionKey);
+    sessionStorage.removeItem(SESSION_KEY);
   } catch (err) {
     console.warn("No se pudo limpiar la sesión:", err);
   }
@@ -79,10 +64,6 @@ function shuffle(arr) {
 }
 
 export default function ScreenMode({ onBack }) {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const salaCode = searchParams.get("sala");
-  
   const [players, setPlayers] = useState(loadPlayers);
   const [nameInput, setNameInput] = useState("");
   const [numImposters, setNumImposters] = useState(1);
@@ -102,7 +83,7 @@ export default function ScreenMode({ onBack }) {
 
   // Restore session on mount
   useEffect(() => {
-    const session = loadSession(salaCode);
+    const session = loadSession();
     if (session) {
       setStep(session.step);
       setRound(session.round);
@@ -115,7 +96,7 @@ export default function ScreenMode({ onBack }) {
       setCategoryId(session.categoryId);
       setHint(session.hint);
     }
-  }, [salaCode]);
+  }, []);
 
   // Save session whenever game state changes
   useEffect(() => {
@@ -131,42 +112,9 @@ export default function ScreenMode({ onBack }) {
         useImposterWord,
         categoryId,
         hint,
-        salaCode,
-      }, salaCode);
+      });
     }
-  }, [step, round, currentPlayerIndex, numImposters, allowAdult, allowCustom, sendHintToImposter, useImposterWord, categoryId, hint, salaCode]);
-
-  // Handle player token detection and auto-reconnect for sala mode
-  useEffect(() => {
-    if (salaCode && step === 'round' && round) {
-      const tokenKey = getPlayerTokenKey(salaCode);
-      if (tokenKey) {
-        const storedToken = sessionStorage.getItem(tokenKey);
-        const currentPlayer = players[currentPlayerIndex];
-        const currentRole = round.roles.find(r => r.playerId === currentPlayer?.id);
-        
-        if (!storedToken && currentRole) {
-          // First time viewing role - store the token
-          sessionStorage.setItem(tokenKey, currentRole.playerToken);
-        } else if (storedToken && step === 'setup') {
-          // Page reload with token - find and restore player's role
-          const session = loadSession(salaCode);
-          if (session?.round) {
-            const playerRole = session.round.roles.find(r => r.playerToken === storedToken);
-            if (playerRole) {
-              // Auto-navigate to this player's role
-              const playerIndex = players.findIndex(p => p.id === playerRole.playerId);
-              if (playerIndex >= 0) {
-                setStep(session.step);
-                setRound(session.round);
-                setCurrentPlayerIndex(playerIndex);
-              }
-            }
-          }
-        }
-      }
-    }
-  }, [salaCode, step, round, currentPlayerIndex, players]);
+  }, [step, round, currentPlayerIndex, numImposters, allowAdult, allowCustom, sendHintToImposter, useImposterWord, categoryId, hint]);
 
   const maxImposters = useMemo(
     () => Math.max(1, players.length ? players.length - 1 : 1),
@@ -193,14 +141,6 @@ export default function ScreenMode({ onBack }) {
     if (players.length < 3) {
       alert("Necesitas al menos 3 jugadores.");
       return;
-    }
-
-    // Generate sala code if not already in sala mode
-    if (!salaCode) {
-      const newSalaCode = randomRoomCode();
-      navigate(`?sala=${newSalaCode}`, { replace: true });
-      // The URL change will trigger a re-render with the new salaCode
-      // We'll continue with the current execution since state hasn't updated yet
     }
 
     let imposters = numImposters;
@@ -237,7 +177,6 @@ export default function ScreenMode({ onBack }) {
       isImposter: impSet.has(id),
       word: impSet.has(id) ? (useImposterWord ? pair.imposter : null) : pair.common,
       revealedLocally: false,
-      playerToken: crypto.randomUUID(), // Generate unique token for each player
     }));
 
     const startingPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
@@ -305,10 +244,19 @@ export default function ScreenMode({ onBack }) {
     setRound(null);
     setCurrentPlayerIndex(0);
     setStep("setup");
-    clearSession(salaCode);
+    clearSession();
   }
 
   function goToNextPlayer() {
+    // Auto-hide current player's role before moving to next
+    if (round && players[currentPlayerIndex]) {
+      const currentPlayerId = players[currentPlayerIndex].id;
+      const currentRole = round.roles.find(r => r.playerId === currentPlayerId);
+      if (currentRole?.revealedLocally) {
+        toggleRevealLocal(currentPlayerId);
+      }
+    }
+    
     if (currentPlayerIndex < players.length - 1) {
       setCurrentPlayerIndex(prev => prev + 1);
     } else {
@@ -317,6 +265,15 @@ export default function ScreenMode({ onBack }) {
   }
 
   function goToPreviousPlayer() {
+    // Auto-hide current player's role before moving to previous
+    if (round && players[currentPlayerIndex]) {
+      const currentPlayerId = players[currentPlayerIndex].id;
+      const currentRole = round.roles.find(r => r.playerId === currentPlayerId);
+      if (currentRole?.revealedLocally) {
+        toggleRevealLocal(currentPlayerId);
+      }
+    }
+    
     if (currentPlayerIndex > 0) {
       setCurrentPlayerIndex(prev => prev - 1);
     }
@@ -495,41 +452,63 @@ export default function ScreenMode({ onBack }) {
                 </div>
               </div>
 
-              <p className="center" style={{ fontSize: "0.95rem", marginBottom: 24 }}>
-                Pasa el celular a <strong>{player.name}</strong> para que vea su rol
-              </p>
-
-              <div className="role-card" style={{ marginBottom: 24 }}>
-                <div className="role-header">
-                  <strong>{player.name}</strong>
-                </div>
-                <div className="role-actions">
-                  <button
-                    className="btn small secondary"
-                    onClick={() => toggleRevealLocal(player.id)}
-                  >
-                    {r.revealedLocally
-                      ? "Ocultar rol"
-                      : "Revelar en pantalla"}
-                  </button>
-                </div>
-                {r.revealedLocally && (
-                  <div className={`local-reveal ${r.isImposter ? 'imposter' : 'crew'}`}>
-                    <div className="role-text">
-                      {r.isImposter ? "🔥 Eres el puto impostor cabrón/a" : "✅ No eres el puto impostor cabrón/a"}
-                    </div>
-                    {r.word ? (
-                      <div className="word-text">
-                        {r.word}
-                      </div>
-                    ) : r.isImposter ? (
-                      <div className="word-text" style={{ fontSize: "1.2rem", opacity: 0.7 }}>
-                        Sin pista - esperando revelación
-                      </div>
-                    ) : null}
+              {!r.revealedLocally ? (
+                <div style={{ textAlign: "center", marginBottom: 24 }}>
+                  <div style={{ 
+                    background: "var(--card)", 
+                    border: "2px dashed var(--border)", 
+                    borderRadius: "var(--radius-lg)",
+                    padding: "48px 24px",
+                    marginBottom: 16
+                  }}>
+                    <div style={{ fontSize: "4rem", marginBottom: 16 }}>🎭</div>
+                    <h3 style={{ marginTop: 0, marginBottom: 8 }}>Turno de {player.name}</h3>
+                    <p className="muted" style={{ marginBottom: 0 }}>
+                      Asegúrate de que solo <strong>{player.name}</strong> pueda ver la pantalla
+                    </p>
                   </div>
-                )}
-              </div>
+                  <button
+                    className="btn primary"
+                    onClick={() => toggleRevealLocal(player.id)}
+                    style={{ fontSize: "1.1rem", padding: "16px 32px" }}
+                  >
+                    👁️ Revelar mi rol
+                  </button>
+                  <p className="muted" style={{ fontSize: "0.85rem", marginTop: 12 }}>
+                    Solo presiona cuando nadie más esté viendo
+                  </p>
+                </div>
+              ) : (
+                <div style={{ marginBottom: 24 }}>
+                  <div className="role-card">
+                    <div className="role-header">
+                      <strong>{player.name}</strong>
+                    </div>
+                    <div className={`local-reveal ${r.isImposter ? 'imposter' : 'crew'}`}>
+                      <div className="role-text">
+                        {r.isImposter ? "🔥 Eres el puto impostor cabrón/a" : "✅ No eres el puto impostor cabrón/a"}
+                      </div>
+                      {r.word ? (
+                        <div className="word-text">
+                          {r.word}
+                        </div>
+                      ) : r.isImposter ? (
+                        <div className="word-text" style={{ fontSize: "1.2rem", opacity: 0.7 }}>
+                          Sin pista - esperando revelación
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="role-actions" style={{ marginTop: 16 }}>
+                      <button
+                        className="btn small ghost"
+                        onClick={() => toggleRevealLocal(player.id)}
+                      >
+                        🙈 Ocultar rol
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: "8px", marginBottom: 16 }}>
                 {currentPlayerIndex > 0 && (
