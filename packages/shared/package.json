@@ -1,0 +1,17 @@
+{
+  "name": "@imposter/shared",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./categories": "./src/data/categories.js",
+    "./categories-en": "./src/data/categories-en.js",
+    "./characters": "./src/data/characters.js",
+    "./utils": "./src/utils/index.js"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  }
+}
